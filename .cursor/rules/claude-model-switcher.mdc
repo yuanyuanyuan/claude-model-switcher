@@ -1,0 +1,113 @@
+---
+alwaysApply: true
+description: "Claude Model Switcher project structure and development guidelines"
+---
+
+# Claude Model Switcher Project Rules
+
+This project is a robust installer and manager for Claude Code with multi-model support. The main component is [install.sh](mdc:install.sh) which handles installation, configuration, and uninstallation.
+
+## Project Structure
+
+- **Main Script**: [install.sh](mdc:install.sh) - Complete installer/manager script (v4.1.0)
+- **Installation Directory**: `$HOME/.claude/claude-model-switcher/`
+- **Configuration File**: `$HOME/.claude/claude-model-switcher/models.conf`
+- **Memory Directory**: `$HOME/.claude/claude-model-switcher/memory/`
+
+## Key Components & Architecture
+
+### 1. Directory Structure
+- Uses dedicated `$HOME/.claude/claude-model-switcher` directory to keep home directory clean
+- Separates configuration (`models.conf`) from memory files
+- Creates backups before modifying shell configuration files
+
+### 2. Model Configuration System
+- **Associative Arrays**: Uses Bash 4.0+ associative arrays for model definitions
+- **Three Properties per Model**:
+  - `MODEL_PROVIDERS[]` - Provider name (moonshot, zhipu)
+  - `MODEL_API_NAMES[]` - Actual API model name
+  - `MODEL_CONTEXTS[]` - Context window information
+- **Default Models**: kimi, glm4, glm4v (multimodal)
+
+### 3. Shell Integration
+- Automatically detects shell type (bash/zsh/other)
+- Uses unique markers (`# CLAUDE_CODE_MODEL_MANAGER_V4`) for safe configuration block management
+- Creates backups before modifying RC files
+- Provides `list_models()` and `use_model()` functions
+
+### 4. Safety Features
+- Creates backups before any file modifications
+- Atomic configuration block replacement
+- Graceful error handling with `set -e`
+- Clean uninstallation process
+
+## Development Guidelines
+
+### Code Style
+- Use clear, descriptive variable names with UPPERCASE for global configs
+- Include comprehensive comments explaining each section's purpose
+- Use echo statements for user feedback with emoji indicators (✅, ❌, 🚀, etc.)
+- Implement proper error handling and validation
+
+### Function Structure
+- Self-contained functions with local variables
+- Clear input validation and error messages
+- Consistent return codes (0 for success, 1 for errors)
+
+### Configuration Management
+- All model definitions in central `models.conf` file
+- Support for easy addition of new models
+- Runtime reloading of configuration
+- Separate provider-specific logic in `use_model()` function
+
+### Shell Compatibility
+- Support bash, zsh, and fallback to .profile
+- Use portable commands and avoid bash-specific features where possible
+- Test associative array support (Bash 4.0+ requirement)
+
+## API Integration Points
+
+### Supported Providers
+1. **Moonshot**: Base URL `https://api.moonshot.cn/anthropic/`
+2. **Zhipu GLM**: Base URL `https://open.bigmodel.cn/api/anthropic`
+
+### Environment Variables
+- `ANTHROPIC_BASE_URL` - Provider-specific API endpoint
+- `ANTHROPIC_API_KEY` - User's API key for the session
+- `CLAUDE_SWITCHER_DIR` - Path to switcher directory
+- `CLAUDE_MODELS_CONF` - Path to models configuration file
+
+## Maintenance Tasks
+
+### Adding New Models
+1. Edit `models.conf` file
+2. Add entries to all three associative arrays
+3. Update provider logic in `use_model()` if needed
+
+### Adding New Providers
+1. Add new case in `use_model()` function
+2. Define appropriate `ANTHROPIC_BASE_URL`
+3. Update documentation and examples
+
+### Version Updates
+- Update version number in script header
+- Update configuration block marker if breaking changes
+- Test uninstall/reinstall process
+
+## Testing Checklist
+
+- [ ] Fresh installation on clean system
+- [ ] Upgrade from previous version
+- [ ] Model switching between different providers
+- [ ] Uninstallation process
+- [ ] Shell configuration backup/restore
+- [ ] Node.js installation (if needed)
+- [ ] Multiple shell types (bash/zsh)
+
+## Security Considerations
+
+- API keys are read with `-s` flag (hidden input)
+- API keys are only stored in session environment variables
+- Configuration files are created with appropriate permissions
+- Backup files are created before any modifications
+- Input validation for model aliases and provider names
