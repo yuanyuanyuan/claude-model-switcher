@@ -170,18 +170,21 @@ cat > "$MODEL_CONFIG_FILE" << 'EOF'
 declare -A MODEL_PROVIDERS
 declare -A MODEL_API_NAMES
 declare -A MODEL_CONTEXTS
+declare -A MODEL_SMALL_FAST_NAMES
 
 # --- Define Your Models Below ---
 
-# Model Alias: 'kimi'
+# Model Alias: 'kimi' - Updated to kimi-k2-turbo-preview
 MODEL_PROVIDERS["kimi"]="moonshot"
-MODEL_API_NAMES["kimi"]="kimi-k2-0711-preview"
-MODEL_CONTEXTS["kimi"]="128K tokens"
+MODEL_API_NAMES["kimi"]="kimi-k2-turbo-preview"
+MODEL_SMALL_FAST_NAMES["kimi"]="kimi-k2-turbo-preview"
+MODEL_CONTEXTS["kimi"]="128K tokens (Main & Fast)"
 
-# Model Alias: 'glm4' - Updated to latest version
+# Model Alias: 'glm4' - Dual model configuration
 MODEL_PROVIDERS["glm4"]="zhipu"
 MODEL_API_NAMES["glm4"]="glm-4.5"
-MODEL_CONTEXTS["glm4"]="128K tokens"
+MODEL_SMALL_FAST_NAMES["glm4"]="glm-4.5-flash"
+MODEL_CONTEXTS["glm4"]="32K tokens (Main) / 128K tokens (Fast)"
 
 # Add more models here...
 # Example:
@@ -237,13 +240,18 @@ list_models() {
         return
     fi
     echo "Available Models (from $CLAUDE_MODELS_CONF):"
-    printf -- '-%.0s' {1..90}; echo ""
-    printf "%-15s %-15s %-35s %s\n" "Alias" "Provider" "API Model Name" "Context"
-    printf -- '-%.0s' {1..90}; echo ""
+    printf -- '-%.0s' {1..110}; echo ""
+    printf "%-10s %-10s %-25s %-25s %s\n" "Alias" "Provider" "Main Model" "Fast Model" "Context"
+    printf -- '-%.0s' {1..110}; echo ""
     for alias in "${!MODEL_PROVIDERS[@]}"; do
-        printf "%-15s %-15s %-35s %s\n" "$alias" "${MODEL_PROVIDERS[$alias]}" "${MODEL_API_NAMES[$alias]}" "${MODEL_CONTEXTS[$alias]}"
+        printf "%-10s %-10s %-25s %-25s %s\n" \
+            "$alias" \
+            "${MODEL_PROVIDERS[$alias]}" \
+            "${MODEL_API_NAMES[$alias]}" \
+            "${MODEL_SMALL_FAST_NAMES[$alias]}" \
+            "${MODEL_CONTEXTS[$alias]}"
     done
-    printf -- '-%.0s' {1..90}; echo ""
+    printf -- '-%.0s' {1..110}; echo ""
 }
 
 # Unified command to switch and configure a model environment.
@@ -262,6 +270,7 @@ use_model() {
     
     local provider="${MODEL_PROVIDERS[$alias]}"
     local model_name="${MODEL_API_NAMES[$alias]}"
+    local small_fast_model="${MODEL_SMALL_FAST_NAMES[$alias]}"
     local context_info="${MODEL_CONTEXTS[$alias]}"
     
     local api_key
@@ -278,25 +287,32 @@ use_model() {
     fi
     
     if [ -n "$api_key" ]; then
-        export ANTHROPIC_API_KEY="$api_key"
+        export ANTHROPIC_AUTH_TOKEN="$api_key"
+        export ANTHROPIC_MODEL="$model_name"
+        export ANTHROPIC_SMALL_FAST_MODEL="$small_fast_model"
         echo "✅ API key set for this session."
+        echo "✅ Main model: $model_name"
+        echo "✅ Fast model: $small_fast_model"
     else
         echo "❌ API key was not provided." && return 1
     fi
     
-    # Manage the official claude-code settings file with temperature control.
+    # Manage the official claude-code settings file with temperature and timeout control.
     mkdir -p "$HOME/.claude"
     cat > "$HOME/.claude/settings.json" << EOM
 {
   "model": "$model_name",
   "env": {
-    "CLAUDE_CODE_TEMPERATURE": "0.6"
+    "CLAUDE_CODE_TEMPERATURE": "0.6",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "ANTHROPIC_MODEL": "$model_name",
+    "ANTHROPIC_SMALL_FAST_MODEL": "$small_fast_model"
   },
   "hooks": {
     "SessionStart": [
       {
         "type": "command",
-        "command": "echo '🤖 Active Model: $model_name ($alias) | Context: $context_info | Temperature: 0.6 (Programming Mode)'"
+        "command": "echo '🤖 Active: $model_name ($alias) | Fast: $small_fast_model | Context: $context_info | T:0.6 | Timeout:5min'"
       }
     ]
   }
@@ -309,8 +325,11 @@ EOM
 # Model Context Reference
 - Provider: $provider
 - Alias: $alias
-- Current Model: $model_name
+- Main Model: $model_name
+- Fast Model: $small_fast_model
 - Context Window: $context_info
+- Temperature: 0.6 (Programming Mode)
+- Timeout: 300000ms (5 minutes)
 - Last verified: $(date)
 EOM
     
@@ -345,9 +364,11 @@ echo "   \$ claude \"your prompt here\""
 echo "   (Temperature is set to 0.6 for better programming assistance)"
 echo ""
 echo "--- Model Information ---"
-echo "   Available models:"
-echo "   - kimi: Moonshot Kimi (128K context)"
-echo "   - glm4: Zhipu GLM-4.5 (128K context)"
+echo "   Available models with dual-model support:"
+echo "   - kimi: Moonshot kimi-k2-turbo-preview"
+echo "     Main: kimi-k2-turbo-preview (128K) | Fast: kimi-k2-turbo-preview (128K)"
+echo "   - glm4: Zhipu GLM-4.5 series"
+echo "     Main: glm-4.5 (32K) | Fast: glm-4.5-flash (128K)"
 echo ""
 echo "--- Customization & Uninstallation ---"
 echo "   - To add or edit models, modify the file:"
