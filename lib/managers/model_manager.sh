@@ -4,9 +4,8 @@
 # Handles model switching, listing, and configuration
 
 # Source dependencies
-source "$(dirname "${BASH_SOURCE[0]}")/../core/logger.sh"
-source "$(dirname "${BASH_SOURCE[0]}")/../core/validator.sh"
-source "$(dirname "${BASH_SOURCE[0]}")/../core/config_loader.sh"
+# Note: Core modules (logger, validator, config_loader) are expected to be 
+# available in the environment. This avoids circular dependencies during testing.
 
 # List available models
 list_models() {

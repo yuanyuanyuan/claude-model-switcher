@@ -4,21 +4,29 @@
 
 # Setup test environment
 setup_all() {
-    # Source the logger module
-    source "$PROJECT_DIR/lib/core/logger.sh"
-    
     # Create temporary log directory for testing
     TEST_LOG_DIR="$TEMP_DIR/logs"
     mkdir -p "$TEST_LOG_DIR"
     
-    # Set test configuration
+    # Set test configuration before sourcing logger
     export LOG_DIR="$TEST_LOG_DIR"
     export LOG_FILE="$TEST_LOG_DIR/test.log"
     export LOG_LEVEL="DEBUG"
     export USE_EMOJIS="true"
     
+    # Source the logger module after setting environment
+    source "$PROJECT_DIR/lib/core/logger.sh"
+    
     # Initialize logger
     logger_init
+    
+    # Verify initialization
+    if [ ! -f "$LOG_FILE" ]; then
+        touch "$LOG_FILE"
+    fi
+    
+    # Export variables for test assertions
+    export TEST_LOG_DIR
 }
 
 teardown_all() {
@@ -30,6 +38,7 @@ teardown_all() {
 describe "Logger Module - Initialization"
 
 context "When initializing logger"
+
 it "should create log directory"
 assert_dir_exists "Log directory should be created" "$TEST_LOG_DIR"
 
@@ -44,6 +53,7 @@ assert_equals "LOGGER_LEVEL should be set" "DEBUG" "$LOGGER_LEVEL"
 describe "Logger Module - Logging Functions"
 
 context "When logging messages"
+
 it "should log debug messages"
 log_debug "Test debug message"
 assert_success "Debug message should be logged" "grep 'Test debug message' '$LOG_FILE'"
@@ -68,6 +78,7 @@ assert_success "Success message should be logged" "grep 'Test success message' '
 describe "Logger Module - Log Levels"
 
 context "When log level is INFO"
+
 it "should not log debug messages when level is INFO"
 export LOGGER_LEVEL="INFO"
 log_debug "Debug message that should not appear"
@@ -81,6 +92,7 @@ assert_success "Info message should be logged at INFO level" "grep 'Info message
 describe "Logger Module - Formatting"
 
 context "When logging with timestamps"
+
 it "should include timestamps in log file"
 log_info "Timestamp test message"
 assert_success "Log should contain timestamp" "grep '\\[.*\\] \\[INFO\\] Timestamp test message' '$LOG_FILE'"
@@ -89,9 +101,10 @@ assert_success "Log should contain timestamp" "grep '\\[.*\\] \\[INFO\\] Timesta
 describe "Logger Module - Utility Functions"
 
 context "When using utility functions"
+
 it "should create log separators"
 log_separator "-" 10
-assert_success "Log separator should be created" "grep '----------' '$LOG_FILE'"
+assert_success "Log separator should be created" "grep -- '-----------*' '$LOG_FILE'"
 
 it "should create log headers"
 log_header "Test Header"

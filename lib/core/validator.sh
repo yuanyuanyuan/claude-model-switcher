@@ -4,7 +4,8 @@
 # Provides validation functions for various inputs and system states
 
 # Source dependencies
-source "$(dirname "${BASH_SOURCE[0]}")/logger.sh"
+# Note: Logger functions are expected to be available in the environment
+# This avoids circular dependencies during testing
 
 # Validate system requirements
 validate_system_requirements() {

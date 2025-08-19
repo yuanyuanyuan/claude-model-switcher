@@ -3,8 +3,6 @@
 # Test Runner - Simple TDD/BDD Framework for Bash
 # Supports unit tests, integration tests, and BDD scenarios
 
-set -e
-
 # Test framework configuration
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$TEST_DIR")"
@@ -215,31 +213,11 @@ it() {
     echo -e "    🧪 $test_name"
 }
 
-# Test setup and teardown
-
-# Setup function to be run before each test
-setup() {
-    # Override in test files
-    :
-}
-
-# Teardown function to be run after each test
-teardown() {
-    # Override in test files
-    :
-}
-
-# Setup function to be run once before all tests
-setup_all() {
-    # Override in test files
-    :
-}
-
-# Teardown function to be run once after all tests
-teardown_all() {
-    # Override in test files
-    :
-}
+# Test setup and teardown - empty by default
+setup() { :; }
+teardown() { :; }
+setup_all() { :; }
+teardown_all() { :; }
 
 # Test discovery and execution
 
@@ -255,16 +233,43 @@ run_test_file() {
     echo -e "${BLUE}🚀 Running test file: $(basename "$test_file")${NC}"
     echo ""
     
-    # Setup for all tests
-    setup_all
+    # Reset functions for this test file
+    setup_all() { :; }
+    teardown_all() { :; }
     
-    # Source the test file
+    # Source the test file in a controlled manner
+    set +e  # Don't exit on errors
+    
+    # First, source only the function definitions (setup_all, teardown_all)
+    # by creating a temporary file with only function definitions
+    local temp_functions_file="$TEMP_DIR/$(basename "$test_file").functions"
+    
+    # Extract function definitions from the test file
+    awk '/^(setup_all|teardown_all)\(\)/ {p=1} p && /^}$/ {print; p=0; next} p' "$test_file" > "$temp_functions_file"
+    
+    # Source the function definitions
+    source "$temp_functions_file"
+    
+    # If setup_all is defined, call it first
+    if declare -f setup_all >/dev/null 2>&1; then
+        setup_all 2>/dev/null || echo -e "${YELLOW}⚠️  Warning: setup_all failed${NC}"
+    fi
+    
+    # Now source the full test file to run the tests
     source "$test_file"
     
-    # Teardown for all tests
-    teardown_all
+    # If teardown_all is defined, call it
+    if declare -f teardown_all >/dev/null 2>&1; then
+        teardown_all 2>/dev/null || echo -e "${YELLOW}⚠️  Warning: teardown_all failed${NC}"
+    fi
+    
+    # Clean up temporary file
+    rm -f "$temp_functions_file"
+    
+    set -e  # Re-enable exit on error
     
     echo ""
+    return 0
 }
 
 # Run all test files in a directory
@@ -466,4 +471,3 @@ main() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
-

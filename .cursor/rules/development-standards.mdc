@@ -1,0 +1,142 @@
+---
+globs: *.sh,*.conf
+description: "Development standards for shell scripts and configuration files"
+---
+
+# Claude Model Switcher - 开发规范
+
+## Shell脚本开发规范
+
+### 文件头部规范
+```bash
+#!/bin/bash
+
+# Module Name - Brief Description  
+# Version: 5.0.0 (Modular Architecture)
+# Purpose: Detailed purpose description
+
+set -e  # Exit on any error
+```
+
+### 函数命名规范
+- 模块前缀 + 功能描述: `logger_init()`, `config_load_all()`
+- 私有函数使用下划线前缀: `_get_timestamp()`, `_validate_input()`
+- 布尔函数使用 `is_` 或 `has_` 前缀: `is_installed()`, `has_node()`
+
+### 变量命名规范
+- 全局配置变量: 全大写，下划线分隔 `APP_VERSION`, `SWITCHER_DIR`
+- 局部变量: 全小写，下划线分隔 `local_var`, `temp_file`
+- 常量: 全大写，`readonly` 声明 `readonly MAX_RETRIES=3`
+
+### 错误处理规范
+```bash
+# 函数返回码规范
+function_name() {
+    local param="$1"
+    
+    # 参数验证
+    if [ -z "$param" ]; then
+        log_error "Parameter required"
+        return 1
+    fi
+    
+    # 执行逻辑
+    if ! some_operation; then
+        log_error "Operation failed"
+        return 1
+    fi
+    
+    return 0  # 成功
+}
+```
+
+### 日志记录规范
+```bash
+# 使用统一的日志模块
+log_info "Starting operation..."
+log_success "Operation completed successfully"
+log_warn "Warning: potential issue detected"
+log_error "Error: operation failed"
+log_debug "Debug: variable value is $var"
+```
+
+## 配置文件规范
+
+### 文件结构
+```bash
+# File Header with description
+# Version and compatibility info
+
+# Section 1: Core Configuration
+VARIABLE_NAME="value"
+
+# Section 2: Feature Configuration  
+FEATURE_ENABLED="true"
+
+# Section 3: Advanced Configuration
+ADVANCED_SETTING="value"
+```
+
+### 变量命名
+- 全大写，下划线分隔
+- 使用描述性名称
+- 分组相关配置
+- 添加注释说明
+
+### 默认值处理
+```bash
+# 在脚本中提供默认值
+CONFIG_VALUE="${CONFIG_VALUE:-default_value}"
+TIMEOUT="${TIMEOUT:-300}"
+```
+
+## 测试文件规范
+
+### 测试函数命名
+- `test_<module>_<function>_<scenario>()`
+- `test_logger_init_success()`
+- `test_config_load_missing_file()`
+
+### 测试结构
+```bash
+test_function_name() {
+    # Arrange - 准备测试数据
+    local test_file="/tmp/test.conf"
+    
+    # Act - 执行被测试的功能
+    result=$(function_under_test "$test_file")
+    
+    # Assert - 验证结果
+    assert_equals "expected" "$result"
+    assert_file_exists "$test_file"
+}
+```
+
+## 文档规范
+
+### 函数文档
+```bash
+# Function: function_name
+# Description: What this function does
+# Parameters:
+#   $1 - first parameter description
+#   $2 - second parameter description  
+# Returns:
+#   0 - success
+#   1 - error
+# Examples:
+#   function_name "param1" "param2"
+function_name() {
+    # Implementation
+}
+```
+
+### 配置文档
+```bash
+# Configuration Variable: VARIABLE_NAME
+# Description: What this variable controls
+# Default: default_value
+# Valid values: value1, value2, value3
+# Example: VARIABLE_NAME="value1"
+VARIABLE_NAME="default_value"
+```

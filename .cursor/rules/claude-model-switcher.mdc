@@ -1,113 +1,224 @@
 ---
 alwaysApply: true
-description: "Claude Model Switcher project structure and development guidelines"
+description: "Claude Model Switcher v5.0.0 modular architecture and development guidelines"
 ---
 
-# Claude Model Switcher Project Rules
+# Claude Model Switcher v5.0.0 - 模块化架构项目规则
 
-This project is a robust installer and manager for Claude Code with multi-model support. The main component is [install.sh](mdc:install.sh) which handles installation, configuration, and uninstallation.
+这是一个强大的 Claude Code 安装器和多模型管理系统，采用模块化架构设计，遵循《设计模式》和《代码简洁之道》的最佳实践。
 
-## Project Structure
+## 🏗️ 项目架构概览
 
-- **Main Script**: [install.sh](mdc:install.sh) - Complete installer/manager script (v4.1.0)
-- **Installation Directory**: `$HOME/.claude/claude-model-switcher/`
-- **Configuration File**: `$HOME/.claude/claude-model-switcher/models.conf`
-- **Memory Directory**: `$HOME/.claude/claude-model-switcher/memory/`
+### 核心文件结构
+- **主入口**: [main.sh](mdc:main.sh) - 模块编排器，负责加载和协调所有模块
+- **安装引导**: [install.sh](mdc:install.sh) - 简化的安装引导脚本 (v5.0.0)
+- **配置目录**: [config/](mdc:config/) - 所有配置文件的集中管理
+- **核心库**: [lib/](mdc:lib/) - 模块化的功能库
+- **测试框架**: [tests/](mdc:tests/) - 完整的TDD/BDD测试系统
 
-## Key Components & Architecture
+### 安装目录结构
+- **主目录**: `$HOME/.claude/claude-model-switcher/`
+- **配置目录**: `$HOME/.claude/claude-model-switcher/config/`
+- **日志目录**: `$HOME/.claude/claude-model-switcher/logs/`
+- **备份目录**: `$HOME/.claude/claude-model-switcher/backups/`
+- **内存目录**: `$HOME/.claude/claude-model-switcher/memory/`
 
-### 1. Directory Structure
-- Uses dedicated `$HOME/.claude/claude-model-switcher` directory to keep home directory clean
-- Separates configuration (`models.conf`) from memory files
-- Creates backups before modifying shell configuration files
+## 🎯 模块化架构组件
 
-### 2. Model Configuration System
-- **Associative Arrays**: Uses Bash 4.0+ associative arrays for model definitions
-- **Three Properties per Model**:
-  - `MODEL_PROVIDERS[]` - Provider name (moonshot, zhipu)
-  - `MODEL_API_NAMES[]` - Actual API model name
-  - `MODEL_CONTEXTS[]` - Context window information
-- **Default Models**: kimi, glm4, glm4v (multimodal)
+### 1. 配置管理系统
+- **应用配置**: [config/app.conf](mdc:config/app.conf) - 应用程序级别配置
+- **模型配置**: [config/models.conf](mdc:config/models.conf) - 模型定义和属性
+- **提供商配置**: [config/providers.conf](mdc:config/providers.conf) - API提供商配置
+- **用户配置**: `$CONFIG_DIR/user.conf` - 用户个性化配置
 
-### 3. Shell Integration
-- Automatically detects shell type (bash/zsh/other)
-- Uses unique markers (`# CLAUDE_CODE_MODEL_MANAGER_V4`) for safe configuration block management
-- Creates backups before modifying RC files
-- Provides `list_models()` and `use_model()` functions
+### 2. 核心模块库 (lib/core/)
+- **日志模块**: [lib/core/logger.sh](mdc:lib/core/logger.sh) - 统一日志记录系统
+- **配置加载器**: [lib/core/config_loader.sh](mdc:lib/core/config_loader.sh) - 配置文件解析和加载
+- **验证器**: [lib/core/validator.sh](mdc:lib/core/validator.sh) - 输入验证和系统检查
 
-### 4. Safety Features
-- Creates backups before any file modifications
-- Atomic configuration block replacement
-- Graceful error handling with `set -e`
-- Clean uninstallation process
+### 3. 安装器模块 (lib/installers/)
+- **Node.js安装器**: [lib/installers/nodejs_installer.sh](mdc:lib/installers/nodejs_installer.sh) - Node.js环境管理
+- **Claude安装器**: [lib/installers/claude_installer.sh](mdc:lib/installers/claude_installer.sh) - Claude Code安装和配置
 
-## Development Guidelines
+### 4. 管理器模块 (lib/managers/)
+- **模型管理器**: [lib/managers/model_manager.sh](mdc:lib/managers/model_manager.sh) - 模型切换和管理
 
-### Code Style
-- Use clear, descriptive variable names with UPPERCASE for global configs
-- Include comprehensive comments explaining each section's purpose
-- Use echo statements for user feedback with emoji indicators (✅, ❌, 🚀, etc.)
-- Implement proper error handling and validation
+### 5. 测试框架 (tests/)
+- **测试运行器**: [tests/test_runner.sh](mdc:tests/test_runner.sh) - TDD/BDD测试框架
+- **单元测试**: `tests/unit/` - 模块级单元测试
+- **集成测试**: `tests/integration/` - 系统集成测试
+- **BDD场景测试**: `tests/bdd/` - 行为驱动开发测试
 
-### Function Structure
-- Self-contained functions with local variables
-- Clear input validation and error messages
-- Consistent return codes (0 for success, 1 for errors)
+### 6. 增强的模型系统
+- **扩展属性**: 支持6个模型属性（提供商、API名称、快速模型、上下文、描述、能力）
+- **双模型支持**: 每个模型支持主模型和快速模型
+- **能力标签**: 支持文本、推理、代码、多模态等能力分类
+- **动态配置**: 运行时重载配置，无需重启
 
-### Configuration Management
-- All model definitions in central `models.conf` file
-- Support for easy addition of new models
-- Runtime reloading of configuration
-- Separate provider-specific logic in `use_model()` function
+### 7. 安全与可靠性
+- **原子操作**: 所有文件修改操作都是原子性的
+- **自动备份**: 修改前自动创建备份文件
+- **版本标记**: 使用 `# CLAUDE_CODE_MODEL_MANAGER_V5` 标记
+- **错误恢复**: 失败时自动回滚到备份状态
 
-### Shell Compatibility
-- Support bash, zsh, and fallback to .profile
-- Use portable commands and avoid bash-specific features where possible
-- Test associative array support (Bash 4.0+ requirement)
+## 📋 开发指南和最佳实践
 
-## API Integration Points
+### 设计原则
+- **单一职责原则 (SRP)**: 每个模块只负责一个功能域
+- **开闭原则 (OCP)**: 对扩展开放，对修改关闭
+- **依赖倒置原则 (DIP)**: 依赖抽象而非具体实现
+- **配置化管理**: 所有可变参数外部化配置
+- **测试优先**: 支持单元测试、集成测试和BDD场景测试
 
-### Supported Providers
-1. **Moonshot**: Base URL `https://api.moonshot.cn/anthropic/`
-2. **Zhipu GLM**: Base URL `https://open.bigmodel.cn/api/anthropic`
+### 代码规范
+- **变量命名**: 全局配置使用大写，模块内变量使用小写
+- **函数设计**: 自包含函数，使用局部变量，清晰的输入验证
+- **错误处理**: 一致的返回码 (0表示成功，1表示错误)
+- **日志记录**: 使用统一的日志模块，支持不同级别
+- **注释规范**: 每个函数和重要代码块都要有清晰的注释
 
-### Environment Variables
-- `ANTHROPIC_BASE_URL` - Provider-specific API endpoint
-- `ANTHROPIC_API_KEY` - User's API key for the session
-- `CLAUDE_SWITCHER_DIR` - Path to switcher directory
-- `CLAUDE_MODELS_CONF` - Path to models configuration file
+### 模块开发规范
+- **文件大小**: 每个模块不超过500行代码
+- **依赖管理**: 明确声明模块依赖关系
+- **接口设计**: 定义清晰的模块接口和参数
+- **配置加载**: 通过配置加载器统一管理配置
+- **测试覆盖**: 每个模块都要有对应的测试文件
 
-## Maintenance Tasks
+### 配置管理规范
+- **分离关注点**: 应用配置、模型配置、提供商配置分别管理
+- **版本兼容**: 支持配置文件的向后兼容
+- **动态重载**: 支持运行时重新加载配置
+- **验证机制**: 配置加载时进行完整性验证
 
-### Adding New Models
-1. Edit `models.conf` file
-2. Add entries to all three associative arrays
-3. Update provider logic in `use_model()` if needed
+### 测试开发规范
+- **TDD流程**: 先写测试，再写实现
+- **测试分层**: 单元测试、集成测试、BDD场景测试
+- **测试隔离**: 每个测试独立运行，不依赖其他测试
+- **Mock机制**: 对外部依赖进行模拟测试
 
-### Adding New Providers
-1. Add new case in `use_model()` function
-2. Define appropriate `ANTHROPIC_BASE_URL`
-3. Update documentation and examples
+## 🔌 API集成和提供商管理
 
-### Version Updates
-- Update version number in script header
-- Update configuration block marker if breaking changes
-- Test uninstall/reinstall process
+### 支持的AI提供商
+1. **Moonshot (月之暗面)**: 
+   - Base URL: `https://api.moonshot.cn/anthropic/`
+   - 支持模型: `kimi-k2-turbo-preview`
+   - 认证方式: Bearer Token
 
-## Testing Checklist
+2. **Zhipu GLM (智谱AI)**:
+   - Base URL: `https://open.bigmodel.cn/api/anthropic`
+   - 支持模型: `glm-4.5`, `glm-4.5-flash`
+   - 认证方式: Bearer Token
 
-- [ ] Fresh installation on clean system
-- [ ] Upgrade from previous version
-- [ ] Model switching between different providers
-- [ ] Uninstallation process
-- [ ] Shell configuration backup/restore
-- [ ] Node.js installation (if needed)
-- [ ] Multiple shell types (bash/zsh)
+3. **OpenAI** (预留扩展):
+   - Base URL: `https://api.openai.com/v1`
+   - 支持模型: `gpt-4`, `gpt-3.5-turbo`
+   - 认证方式: Bearer Token
 
-## Security Considerations
+4. **Anthropic** (预留扩展):
+   - Base URL: `https://api.anthropic.com`
+   - 支持模型: `claude-3-opus`, `claude-3-sonnet`
+   - 认证方式: API Key
 
-- API keys are read with `-s` flag (hidden input)
-- API keys are only stored in session environment variables
-- Configuration files are created with appropriate permissions
-- Backup files are created before any modifications
-- Input validation for model aliases and provider names
+### 环境变量系统
+- `ANTHROPIC_BASE_URL` - 当前选择的API提供商端点
+- `ANTHROPIC_API_KEY` - 用户的API密钥（会话级别）
+- `CLAUDE_SWITCHER_DIR` - 切换器安装目录路径
+- `CLAUDE_MODELS_CONF` - 模型配置文件路径
+- `CLAUDE_PROVIDERS_CONF` - 提供商配置文件路径
+- `LOG_LEVEL` - 日志级别 (DEBUG, INFO, WARN, ERROR)
+- `USE_EMOJIS` - 是否在输出中使用表情符号
+
+## 🔧 维护和扩展指南
+
+### 添加新模型
+1. 编辑 [config/models.conf](mdc:config/models.conf) 文件
+2. 在所有6个关联数组中添加条目：
+   - `MODEL_PROVIDERS[]` - 提供商名称
+   - `MODEL_API_NAMES[]` - 主模型API名称  
+   - `MODEL_SMALL_FAST_NAMES[]` - 快速模型API名称
+   - `MODEL_CONTEXTS[]` - 上下文窗口信息
+   - `MODEL_DESCRIPTIONS[]` - 模型描述
+   - `MODEL_CAPABILITIES[]` - 模型能力标签
+3. 更新 `AVAILABLE_MODELS` 列表
+4. 运行测试验证新模型配置
+
+### 添加新提供商
+1. 编辑 [config/providers.conf](mdc:config/providers.conf) 文件
+2. 添加提供商配置变量：
+   - `PROVIDER_<NAME>_BASE_URL` - API基础URL
+   - `PROVIDER_<NAME>_AUTH_TYPE` - 认证类型
+   - `PROVIDER_<NAME>_DESCRIPTION` - 提供商描述
+   - `PROVIDER_<NAME>_SUPPORTED_MODELS` - 支持的模型列表
+3. 更新模型管理器中的提供商逻辑
+4. 添加相应的测试用例
+
+### 开发新模块
+1. 在 `lib/` 目录下创建适当的子目录
+2. 遵循模块命名约定 (`<功能>_<类型>.sh`)
+3. 实现标准的模块接口函数
+4. 添加完整的错误处理和日志记录
+5. 创建对应的测试文件
+6. 更新主入口文件的模块加载
+
+### 版本升级流程
+- 更新所有脚本文件中的版本号
+- 更新配置文件标记 (`CLAUDE_CODE_MODEL_MANAGER_V5`)
+- 运行完整测试套件
+- 测试升级和回滚流程
+- 更新文档和变更日志
+
+## ✅ 测试检查清单
+
+### 安装测试
+- [ ] 全新系统安装
+- [ ] 从旧版本升级
+- [ ] 不同操作系统兼容性
+- [ ] 不同Shell环境 (bash/zsh/fish)
+- [ ] Node.js环境检测和安装
+
+### 功能测试  
+- [ ] 模型切换功能
+- [ ] 双模型支持 (主模型/快速模型)
+- [ ] 提供商切换
+- [ ] 配置重载
+- [ ] 内存功能
+- [ ] 日志记录
+
+### 安全测试
+- [ ] API密钥安全处理
+- [ ] 文件权限设置
+- [ ] 备份和恢复
+- [ ] 输入验证
+- [ ] 错误处理
+
+### 性能测试
+- [ ] 启动时间
+- [ ] 模型切换速度
+- [ ] 内存使用
+- [ ] 日志文件大小控制
+
+## 🔒 安全考虑
+
+### 密钥管理
+- API密钥使用 `-s` 标志隐藏输入
+- 密钥仅存储在会话环境变量中
+- 不在配置文件中持久化密钥
+- 支持密钥轮换和更新
+
+### 文件安全
+- 配置文件设置适当权限 (600)
+- 自动创建备份文件
+- 原子文件操作防止数据丢失
+- 清理临时文件
+
+### 输入验证
+- 验证模型别名和提供商名称
+- 检查API端点URL格式
+- 验证配置文件完整性
+- 防止路径遍历攻击
+
+### 错误处理
+- 优雅的错误恢复机制
+- 详细的错误日志记录
+- 用户友好的错误信息
+- 自动回滚机制

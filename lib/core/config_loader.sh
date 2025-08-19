@@ -4,7 +4,8 @@
 # Handles loading and validation of configuration files
 
 # Source the logger
-source "$(dirname "${BASH_SOURCE[0]}")/logger.sh"
+# Note: Logger functions are expected to be available in the environment
+# This avoids circular dependencies during testing
 
 # Global configuration variables
 declare -A CONFIG_CACHE
@@ -33,6 +34,16 @@ config_load() {
         if ! config_validate_syntax "$config_file"; then
             log_error "Configuration file has syntax errors: $config_file"
             return 1
+        fi
+        
+        # Pre-declare associative arrays for models.conf
+        if [[ "$config_file" == *"models.conf" ]]; then
+            declare -gA MODEL_PROVIDERS 2>/dev/null || true
+            declare -gA MODEL_API_NAMES 2>/dev/null || true
+            declare -gA MODEL_CONTEXTS 2>/dev/null || true
+            declare -gA MODEL_SMALL_FAST_NAMES 2>/dev/null || true
+            declare -gA MODEL_DESCRIPTIONS 2>/dev/null || true
+            declare -gA MODEL_CAPABILITIES 2>/dev/null || true
         fi
         
         # Source the configuration file
@@ -106,14 +117,14 @@ config_validate_app_config() {
 config_validate_models_config() {
     local config_file="$1"
     
-    # Check for associative array declarations
-    if ! grep -q "declare -A MODEL_PROVIDERS" "$config_file"; then
-        log_error "MODEL_PROVIDERS associative array not declared in $config_file"
+    # Check for model assignments (arrays are declared externally)
+    if ! grep -q "MODEL_PROVIDERS\[" "$config_file"; then
+        log_error "No MODEL_PROVIDERS assignments found in $config_file"
         return 1
     fi
     
-    if ! grep -q "declare -A MODEL_API_NAMES" "$config_file"; then
-        log_error "MODEL_API_NAMES associative array not declared in $config_file"
+    if ! grep -q "MODEL_API_NAMES\[" "$config_file"; then
+        log_error "No MODEL_API_NAMES assignments found in $config_file"
         return 1
     fi
     

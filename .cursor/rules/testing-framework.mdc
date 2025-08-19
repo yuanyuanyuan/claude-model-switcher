@@ -1,0 +1,222 @@
+---
+globs: tests/**/*.sh
+description: "Testing framework guidelines and BDD scenarios"
+---
+
+# 测试框架使用指南
+
+## TDD/BDD测试框架
+
+基于 [tests/test_runner.sh](mdc:tests/test_runner.sh) 的测试框架，支持单元测试、集成测试和BDD场景测试。
+
+## 测试文件组织
+
+### 单元测试 (tests/unit/)
+- 测试单个函数或模块
+- 文件命名: `test_<module_name>.sh`
+- 例如: `test_logger.sh`, `test_config_loader.sh`
+
+### 集成测试 (tests/integration/)  
+- 测试模块间交互
+- 文件命名: `test_<feature>_integration.sh`
+- 例如: `test_model_switching_integration.sh`
+
+### BDD场景测试 (tests/bdd/)
+- 业务场景驱动测试
+- 文件命名: `test_<scenario>_bdd.sh`
+- 例如: `test_user_installs_claude_bdd.sh`
+
+## 测试函数规范
+
+### 断言函数
+```bash
+# 基础断言
+assert_equals "expected" "$actual"
+assert_not_equals "not_expected" "$actual"
+assert_true "$condition"
+assert_false "$condition"
+
+# 文件断言
+assert_file_exists "/path/to/file"
+assert_file_not_exists "/path/to/file"
+assert_directory_exists "/path/to/dir"
+
+# 字符串断言
+assert_contains "substring" "$string"
+assert_not_contains "substring" "$string"
+assert_matches "pattern" "$string"
+
+# 数值断言
+assert_greater_than 5 "$value"
+assert_less_than 10 "$value"
+```
+
+### 测试生命周期
+```bash
+# 每个测试文件的结构
+setup_test_environment() {
+    # 测试前准备
+    export TEST_MODE="true"
+    mkdir -p "$TEST_TEMP_DIR"
+}
+
+teardown_test_environment() {
+    # 测试后清理
+    rm -rf "$TEST_TEMP_DIR"
+    unset TEST_MODE
+}
+
+# 单个测试的结构
+test_function_name() {
+    # Given - 准备测试条件
+    local test_input="test_value"
+    
+    # When - 执行被测试功能
+    local result=$(function_under_test "$test_input")
+    
+    # Then - 验证结果
+    assert_equals "expected_output" "$result"
+}
+```
+
+## BDD场景测试模式
+
+### Scenario结构
+```bash
+# Scenario: User installs Claude Model Switcher
+test_user_installs_claude_bdd() {
+    # Given a clean system
+    given_clean_system
+    
+    # When user runs the installer
+    when_user_runs_installer
+    
+    # Then Claude should be installed successfully
+    then_claude_is_installed
+    
+    # And the user can switch models
+    and_user_can_switch_models
+}
+
+# 步骤定义函数
+given_clean_system() {
+    rm -rf "$HOME/.claude" 2>/dev/null || true
+    unset ANTHROPIC_API_KEY
+}
+
+when_user_runs_installer() {
+    echo "test_api_key" | ./install.sh --non-interactive
+}
+
+then_claude_is_installed() {
+    assert_directory_exists "$HOME/.claude/claude-model-switcher"
+    assert_file_exists "$HOME/.claude/claude-model-switcher/config/models.conf"
+}
+
+and_user_can_switch_models() {
+    source "$HOME/.bashrc"
+    assert_function_exists "use_model"
+    assert_function_exists "list_models"
+}
+```
+
+## Mock和Stub
+
+### 外部命令Mock
+```bash
+# Mock npm command
+mock_npm() {
+    npm() {
+        case "$1" in
+            "install")
+                echo "Mocked: npm install successful"
+                return 0
+                ;;
+            "list")
+                echo "@anthropic-ai/claude-code@1.0.0"
+                return 0
+                ;;
+            *)
+                echo "Unexpected npm command: $*"
+                return 1
+                ;;
+        esac
+    }
+}
+
+# Mock API调用
+mock_api_call() {
+    curl() {
+        if [[ "$*" == *"api.moonshot.cn"* ]]; then
+            echo '{"status": "success"}'
+            return 0
+        fi
+        return 1
+    }
+}
+```
+
+### 文件系统Mock
+```bash
+# Mock文件系统操作
+setup_mock_filesystem() {
+    # 创建临时测试目录
+    TEST_HOME="/tmp/claude_test_$$"
+    mkdir -p "$TEST_HOME"
+    export HOME="$TEST_HOME"
+}
+
+cleanup_mock_filesystem() {
+    rm -rf "$TEST_HOME"
+}
+```
+
+## 测试运行
+
+### 运行所有测试
+```bash
+./tests/test_runner.sh --all
+```
+
+### 运行特定类型测试
+```bash
+./tests/test_runner.sh --unit
+./tests/test_runner.sh --integration  
+./tests/test_runner.sh --bdd
+```
+
+### 运行特定测试文件
+```bash
+./tests/test_runner.sh tests/unit/test_logger.sh
+```
+
+### 详细输出模式
+```bash
+./tests/test_runner.sh --verbose --all
+```
+
+## 测试最佳实践
+
+### 测试隔离
+- 每个测试独立运行
+- 使用临时目录和文件
+- 清理测试产生的副作用
+- 不依赖其他测试的状态
+
+### 测试数据
+- 使用最小化的测试数据
+- 避免依赖外部资源
+- 使用Mock替代外部依赖
+- 测试边界条件和错误情况
+
+### 可读性
+- 使用描述性的测试名称
+- 遵循Given-When-Then结构
+- 添加必要的注释
+- 保持测试简单专注
+
+### 性能
+- 测试应该快速运行
+- 使用并行测试（如果支持）
+- 避免不必要的等待和延迟
+- 优化测试设置和清理
