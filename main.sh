@@ -145,11 +145,21 @@ if [ -f "$CLAUDE_SWITCHER_DIR/main.sh" ]; then
     # Source configuration
     [ -f "$CLAUDE_SWITCHER_DIR/config/app.conf" ] && source "$CLAUDE_SWITCHER_DIR/config/app.conf"
     [ -f "$CLAUDE_SWITCHER_DIR/config/providers.conf" ] && source "$CLAUDE_SWITCHER_DIR/config/providers.conf"
+    
+    # Pre-declare associative arrays before loading models.conf
+    declare -gA MODEL_PROVIDERS 2>/dev/null || true
+    declare -gA MODEL_API_NAMES 2>/dev/null || true
+    declare -gA MODEL_CONTEXTS 2>/dev/null || true
+    declare -gA MODEL_SMALL_FAST_NAMES 2>/dev/null || true
+    declare -gA MODEL_DESCRIPTIONS 2>/dev/null || true
+    declare -gA MODEL_CAPABILITIES 2>/dev/null || true
+    
     [ -f "$CLAUDE_SWITCHER_DIR/config/models.conf" ] && source "$CLAUDE_SWITCHER_DIR/config/models.conf"
     
     # Source core modules
     [ -f "$CLAUDE_SWITCHER_DIR/lib/core/logger.sh" ] && source "$CLAUDE_SWITCHER_DIR/lib/core/logger.sh"
     [ -f "$CLAUDE_SWITCHER_DIR/lib/core/config_loader.sh" ] && source "$CLAUDE_SWITCHER_DIR/lib/core/config_loader.sh"
+    [ -f "$CLAUDE_SWITCHER_DIR/lib/core/validator.sh" ] && source "$CLAUDE_SWITCHER_DIR/lib/core/validator.sh"
     [ -f "$CLAUDE_SWITCHER_DIR/lib/managers/model_manager.sh" ] && source "$CLAUDE_SWITCHER_DIR/lib/managers/model_manager.sh"
     
     # Initialize logger for shell functions
@@ -158,19 +168,23 @@ fi
 
 # Shell functions for user interaction
 list_models() {
-    if command -v list_models >/dev/null 2>&1; then
-        list_models "$@"
+    # Check if the modular system is loaded
+    if [ -f "$CLAUDE_SWITCHER_DIR/main.sh" ] && declare -f list_models_impl >/dev/null 2>&1; then
+        list_models_impl "$@"
     else
         echo "❌ Claude Model Switcher not properly installed"
+        echo "💡 Try running: source ~/.bashrc"
         return 1
     fi
 }
 
 use_model() {
-    if command -v use_model >/dev/null 2>&1; then
-        use_model "$@"
+    # Check if the modular system is loaded  
+    if [ -f "$CLAUDE_SWITCHER_DIR/main.sh" ] && declare -f use_model_impl >/dev/null 2>&1; then
+        use_model_impl "$@"
     else
         echo "❌ Claude Model Switcher not properly installed"
+        echo "💡 Try running: source ~/.bashrc"
         return 1
     fi
 }
@@ -418,10 +432,10 @@ parse_arguments() {
             cmd_status "$@"
             ;;
         "list-models")
-            list_models "$@"
+            list_models_impl "$@"
             ;;
         "use-model")
-            use_model "$@"
+            use_model_impl "$@"
             ;;
         "add-model")
             add_model "$@"

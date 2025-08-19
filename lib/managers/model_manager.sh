@@ -7,8 +7,8 @@
 # Note: Core modules (logger, validator, config_loader) are expected to be 
 # available in the environment. This avoids circular dependencies during testing.
 
-# List available models
-list_models() {
+# List available models (implementation)
+list_models_impl() {
     log_header "Available Models"
     
     # Reload configuration to get latest models
@@ -53,8 +53,8 @@ list_models() {
     return 0
 }
 
-# Use/switch to a specific model
-use_model() {
+# Use/switch to a specific model (implementation)
+use_model_impl() {
     local alias="$1"
     local api_key="$2"  # Optional: can be provided or prompted
     
