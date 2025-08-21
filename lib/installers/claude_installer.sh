@@ -83,6 +83,7 @@ _configure_claude_code() {
     
     local claude_config_dir="$HOME/.claude"
     local claude_config_file="$claude_config_dir/.claude.json"
+    local claude_settings_file="$claude_config_dir/settings.json"
     
     # Ensure Claude config directory exists
     if ! mkdir -p "$claude_config_dir"; then
@@ -121,10 +122,105 @@ _configure_claude_code() {
     
     if node -e "$config_script" 2>/dev/null; then
         log_success "Claude Code configuration updated"
-        return 0
     else
         log_error "Failed to configure Claude Code"
         return 1
+    fi
+    
+    # Configure MCP servers
+    _configure_mcp_servers
+}
+
+# Configure MCP servers
+_configure_mcp_servers() {
+    log_progress "Configuring MCP servers..."
+    
+    local claude_config_dir="$HOME/.claude"
+    local claude_settings_file="$claude_config_dir/settings.json"
+    local mcp_config_source="$(dirname "${BASH_SOURCE[0]}")/../../config/mcp.json"
+    
+    # Check if MCP config exists
+    if [ ! -f "$mcp_config_source" ]; then
+        log_info "No MCP configuration found, skipping MCP setup"
+        return 0
+    fi
+    
+    # Read MCP configuration
+    local mcp_config
+    if ! mcp_config=$(cat "$mcp_config_source" 2>/dev/null); then
+        log_error "Failed to read MCP configuration from $mcp_config_source"
+        return 1
+    fi
+    
+    # Configure settings.json with MCP servers
+    local mcp_config_path="$HOME/.claude/settings.json"
+    local mcp_source_path="$(dirname "${BASH_SOURCE[0]}")/../../config/mcp.json"
+    
+    if [ -f "$mcp_source_path" ]; then
+        log_progress "Configuring MCP servers..."
+        
+        # Create backup
+        if [ -f "$mcp_config_path" ]; then
+            cp "$mcp_config_path" "$mcp_config_path.backup"
+        fi
+        
+        # Use a simple Node.js script to merge configurations
+        node -e "
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+const settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+const mcpPath = '$mcp_source_path';
+
+let settings = {};
+if (fs.existsSync(settingsPath)) {
+    try {
+        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    } catch (e) {
+        console.warn('Could not parse existing settings');
+    }
+}
+
+let mcpConfig = {};
+if (fs.existsSync(mcpPath)) {
+    try {
+        mcpConfig = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
+    } catch (e) {
+        console.warn('Could not parse MCP configuration');
+    }
+}
+
+// Merge MCP configuration
+if (mcpConfig.mcpServers) {
+    settings.mcpServers = mcpConfig.mcpServers;
+}
+
+// Update hook
+if (!settings.hooks) settings.hooks = {};
+if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
+if (settings.hooks.SessionStart.length === 0 || 
+    !settings.hooks.SessionStart[0].command.includes('MCP:')) {
+    settings.hooks.SessionStart = [{
+        type: 'command',
+        command: 'echo 🤖 Active: ' + (settings.model || 'kimi-k2-turbo-preview') + ' | MCP: jina-mcp-server enabled'
+    }];
+}
+
+fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+console.log('MCP configuration applied successfully');
+" 2>/dev/null
+        
+        if [ $? -eq 0 ]; then
+            log_success "MCP configuration applied"
+            return 0
+        else
+            log_error "Failed to apply MCP configuration"
+            return 1
+        fi
+    else
+        log_info "No MCP configuration found, skipping MCP setup"
+        return 0
     fi
 }
 

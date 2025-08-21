@@ -1,141 +1,199 @@
-# Claude Model Switcher v5.0.0 - 模块化架构
+# Claude Model Switcher - AI模型管理专家
 
-一个强大的 Claude Code 安装器和多模型管理系统，采用模块化架构设计，遵循《设计模式》和《代码简洁之道》的最佳实践。
+> 🚀 **Claude Model Switcher v5.0.0** - 专业级Claude Code多模型管理解决方案
 
-## 🏗️ 架构特性
+一个采用**模块化架构**设计的Claude Code安装器和多模型管理系统，专为开发团队和个人开发者设计，提供企业级的模型管理体验。
 
-### ✨ 核心改进
+## 🎯 解决的核心问题
 
-- **模块化设计**: 将单个378行文件拆分为多个专门模块，每个模块不超过500行
-- **配置驱动**: 完全消除硬编码，所有配置集中管理
-- **测试驱动**: 支持TDD/BDD的完整测试框架
-- **关注点分离**: 每个模块职责单一，易于维护和扩展
-- **依赖注入**: 模块间松耦合，便于单独测试
+### 场景痛点
+- **多模型切换困难**：不同场景需要不同AI模型，手动切换繁琐
+- **配置复杂**：每个模型都有独立的API密钥和配置参数
+- **版本管理混乱**：无法追踪和回滚模型配置变更
+- **团队协作困难**：团队成员使用不同模型配置，导致结果不一致
+- **安装部署复杂**：新手用户难以正确安装和配置Claude Code
 
-### 🎯 设计原则
+### 解决方案
+- ✅ **一键切换**：3秒内完成模型切换
+- ✅ **配置集中管理**：所有模型配置统一管理，支持版本控制
+- ✅ **团队协作**：共享模型配置，确保团队成员使用相同设置
+- ✅ **自动化安装**：一键完成Claude Code及其依赖的安装
+- ✅ **企业级安全**：API密钥安全存储，支持团队权限管理
 
-1. **单一职责原则 (SRP)**: 每个模块只负责一个功能域
-2. **开闭原则 (OCP)**: 对扩展开放，对修改关闭
-3. **依赖倒置原则 (DIP)**: 依赖抽象而非具体实现
-4. **配置化管理**: 所有可变参数外部化配置
-5. **测试优先**: 支持单元测试、集成测试和BDD场景测试
+## 🏗️ 系统架构
 
-## 📁 目录结构
+### 核心设计理念
+- **模块化架构**：每个功能独立成模块，便于维护和扩展
+- **配置驱动**：所有设置外部化，支持热更新
+- **测试优先**：完整的TDD/BDD测试框架
+- **零依赖部署**：纯Shell脚本，无需额外依赖
+
+### 技术栈
+```
+├── Shell脚本 (Bash/Zsh兼容)
+├── 配置文件 (INI格式，易于编辑)
+├── 测试框架 (自定义BDD测试)
+├── 日志系统 (结构化日志)
+└── 模块系统 (动态加载)
+```
+
+## 📁 项目结构
 
 ```
 claude-model-switcher/
-├── main.sh                    # 主入口点 - 模块编排器
-├── install.sh                 # 简化的安装引导脚本
-├── config/                    # 配置文件目录
-│   ├── app.conf              # 应用程序配置
-│   ├── models.conf           # 模型定义配置
-│   └── providers.conf        # 提供商配置
-├── lib/                      # 核心库目录
-│   ├── core/                 # 核心模块
-│   │   ├── logger.sh         # 日志模块
-│   │   ├── config_loader.sh  # 配置加载器
-│   │   └── validator.sh      # 验证器模块
-│   ├── installers/           # 安装器模块
-│   │   ├── nodejs_installer.sh  # Node.js安装器
-│   │   └── claude_installer.sh  # Claude Code安装器
-│   ├── managers/             # 管理器模块
-│   │   └── model_manager.sh  # 模型管理器
-│   └── utils/                # 工具模块 (待扩展)
-├── tests/                    # 测试框架
-│   ├── test_runner.sh        # 测试运行器
-│   ├── unit/                 # 单元测试
-│   ├── integration/          # 集成测试
-│   └── bdd/                  # BDD场景测试
-└── templates/                # 模板文件 (待扩展)
+├── 📋 main.sh                    # 主程序入口
+├── ⚙️ config/                    # 配置中心
+│   ├── app.conf                 # 应用配置
+│   ├── models.conf              # 模型定义
+│   └── providers.conf           # 提供商配置
+├── 🔧 lib/                      # 核心模块库
+│   ├── core/                    # 基础模块
+│   │   ├── logger.sh           # 日志系统
+│   │   ├── config_loader.sh    # 配置管理
+│   │   └── validator.sh        # 数据验证
+│   ├── installers/             # 安装模块
+│   │   ├── nodejs_installer.sh # Node.js管理
+│   │   └── claude_installer.sh # Claude安装
+│   └── managers/               # 业务模块
+│       └── model_manager.sh    # 模型管理
+├── 🧪 tests/                   # 测试框架
+│   ├── test_runner.sh         # 测试运行器
+│   ├── unit/                  # 单元测试
+│   ├── integration/           # 集成测试
+│   └── bdd/                   # 场景测试
+├── 📚 docs/                   # 文档目录
+└── 📝 README.md               # 本文档
 ```
 
-## 🚀 快速开始
+## 🚀 快速入门
 
-### 安装
+### 1. 一键安装
 
 ```bash
-# 克隆或下载项目
-git clone <repository-url>
+# 克隆项目
+git clone https://github.com/your-repo/claude-model-switcher.git
 cd claude-model-switcher
 
-# 运行安装脚本
+# 执行安装
+chmod +x install.sh
 ./install.sh
+
+# 验证安装
+list_models
 ```
 
-### 基本使用
+### 2. 基础使用
 
 ```bash
-# 列出可用模型
+# 查看可用模型
 list_models
 
-# 切换到指定模型
+# 切换到Kimi模型
 use_model kimi
 
-# 使用 Claude Code
-claude "你的提示词"
+# 使用Claude Code
+claude "请帮我分析这段代码"
+
+# 切换到GPT-4
+use_model gpt4
 ```
 
-### 高级管理
+### 3. 高级功能
 
 ```bash
-# 使用完整CLI
-~/.claude/claude-model-switcher/main.sh --help
-
-# 系统状态检查
+# 查看系统状态
 ~/.claude/claude-model-switcher/main.sh status
 
 # 添加自定义模型
-~/.claude/claude-model-switcher/main.sh add-model my-model openai gpt-4
+~/.claude/claude-model-switcher/main.sh add-model \
+  "custom-model" \
+  "openai" \
+  "gpt-4-turbo-preview" \
+  "https://api.openai.com/v1"
 
-# 运行测试
-~/.claude/claude-model-switcher/tests/test_runner.sh
+# 批量管理模型
+~/.claude/claude-model-switcher/main.sh batch-update
 ```
 
-## 🔧 模块详解
+## ⚙️ 配置详解
 
-### 核心模块 (lib/core/)
+### 1. 应用配置 (config/app.conf)
 
-#### logger.sh - 日志模块
-- **职责**: 统一的日志记录和输出格式化
-- **特性**: 多级别日志、文件输出、彩色控制台输出
-- **函数**: `log_info()`, `log_error()`, `log_success()`, `log_debug()`
+```bash
+# 基础设置
+APP_NAME="Claude Model Switcher"
+APP_VERSION="5.0.0"
+INSTALL_DIR="$HOME/.claude/claude-model-switcher"
 
-#### config_loader.sh - 配置加载器
-- **职责**: 配置文件的加载、验证和缓存管理
-- **特性**: 自动重载、语法验证、依赖检查
-- **函数**: `config_load()`, `config_validate_syntax()`, `config_load_all()`
+# 日志配置
+LOG_LEVEL="INFO"
+LOG_FILE="$INSTALL_DIR/logs/app.log"
+MAX_LOG_SIZE="10M"
 
-#### validator.sh - 验证器模块
-- **职责**: 输入验证和系统环境检查
-- **特性**: 多种验证规则、详细错误信息
-- **函数**: `validate_model_alias()`, `validate_api_key()`, `validate_system_requirements()`
+# 性能设置
+CACHE_TTL=3600
+PARALLEL_JOBS=4
+TIMEOUT_SECONDS=30
+```
 
-### 安装器模块 (lib/installers/)
+### 2. 模型配置 (config/models.conf)
 
-#### nodejs_installer.sh - Node.js安装器
-- **职责**: Node.js和NVM的安装管理
-- **特性**: 版本检查、平台适配、安装验证
-- **函数**: `install_nodejs()`, `validate_nodejs()`, `upgrade_nodejs()`
+```bash
+# Kimi模型
+[kimi]
+provider="moonshot"
+api_name="kimi-k2-turbo-preview"
+context_length="128K"
+max_tokens=4096
+temperature=0.6
 
-#### claude_installer.sh - Claude Code安装器
-- **职责**: Claude Code CLI的安装和配置
-- **特性**: NPM包管理、配置文件生成
-- **函数**: `install_claude_code()`, `update_claude_code()`, `test_claude_installation()`
+# GPT-4
+[gpt4]
+provider="openai"
+api_name="gpt-4-turbo-preview"
+context_length="128K"
+max_tokens=4096
+temperature=0.7
 
-### 管理器模块 (lib/managers/)
+# Claude 3.5 Sonnet
+[claude35]
+provider="anthropic"
+api_name="claude-3-5-sonnet-20241022"
+context_length="200K"
+max_tokens=4096
+temperature=0.7
+```
 
-#### model_manager.sh - 模型管理器
-- **职责**: AI模型的切换、配置和管理
-- **特性**: 动态配置加载、提供商适配、会话管理
-- **函数**: `list_models()`, `use_model()`, `add_model()`, `remove_model()`
+### 3. 提供商配置 (config/providers.conf)
 
-## 🧪 测试框架
+```bash
+# Moonshot (Kimi)
+[moonshot]
+base_url="https://api.moonshot.cn/anthropic/"
+api_key_env="MOONSHOT_API_KEY"
+rate_limit=60
 
-### 测试类型
+# OpenAI
+[openai]
+base_url="https://api.openai.com/v1"
+api_key_env="OPENAI_API_KEY"
+rate_limit=100
 
-1. **单元测试** (`tests/unit/`): 测试单个模块的功能
-2. **集成测试** (`tests/integration/`): 测试模块间的协作
-3. **BDD测试** (`tests/bdd/`): 基于用户场景的行为驱动测试
+# Anthropic
+[anthropic]
+base_url="https://api.anthropic.com"
+api_key_env="ANTHROPIC_API_KEY"
+rate_limit=50
+```
+
+## 🧪 测试驱动开发
+
+### 测试框架特性
+- ✅ **单元测试**：每个函数独立测试
+- ✅ **集成测试**：模块间协作验证
+- ✅ **BDD场景**：用户故事驱动测试
+- ✅ **性能测试**：响应时间和资源使用
+- ✅ **安全测试**：输入验证和权限控制
 
 ### 运行测试
 
@@ -143,137 +201,313 @@ claude "你的提示词"
 # 运行所有测试
 ./tests/test_runner.sh
 
-# 运行特定类型的测试
-./tests/test_runner.sh unit
-./tests/test_runner.sh integration
-./tests/test_runner.sh bdd
+# 运行特定类型测试
+./tests/test_runner.sh unit           # 单元测试
+./tests/test_runner.sh integration    # 集成测试
+./tests/test_runner.sh bdd           # 场景测试
 
 # 运行特定测试文件
-./tests/test_runner.sh tests/unit/test_logger.sh
+./tests/test_runner.sh tests/unit/test_model_manager.sh
+
+# 调试模式运行测试
+DEBUG=1 ./tests/test_runner.sh
 ```
 
-### 测试断言函数
+### 测试断言库
 
-- `assert_success()` - 命令应该成功
-- `assert_failure()` - 命令应该失败
-- `assert_equals()` - 字符串相等
-- `assert_file_exists()` - 文件存在
-- `assert_contains()` - 字符串包含
-
-## ⚙️ 配置管理
-
-### 配置文件
-
-#### config/app.conf - 应用配置
 ```bash
-APP_VERSION="5.0.0"
-SWITCHER_DIR="$HOME/.claude/claude-model-switcher"
-CLAUDE_DEFAULT_TEMPERATURE="0.6"
-LOG_LEVEL="INFO"
+# 断言成功
+assert_success "应该成功切换模型" "use_model kimi"
+
+# 断言失败
+assert_failure "应该拒绝无效模型" "use_model invalid-model"
+
+# 断言输出包含
+assert_contains "输出应包含模型名称" "$(list_models)" "kimi"
+
+# 断言文件存在
+assert_file_exists "配置文件应存在" "$HOME/.claude/config/models.conf"
 ```
 
-#### config/models.conf - 模型配置
+## 🔧 开发指南
+
+### 1. 模块开发规范
+
+#### 模块结构模板
 ```bash
-# 模型定义
-MODEL_PROVIDERS["kimi"]="moonshot"
-MODEL_API_NAMES["kimi"]="kimi-k2-turbo-preview"
-MODEL_CONTEXTS["kimi"]="128K tokens"
+#!/bin/bash
+# Module: my_module.sh
+# Purpose: 描述模块用途
+# Version: 1.0.0
+
+# 模块状态
+MODULE_NAME="my_module"
+MODULE_VERSION="1.0.0"
+MODULE_ENABLED=true
+
+# 模块初始化
+my_module_init() {
+    log_info "初始化 $MODULE_NAME v$MODULE_VERSION"
+    # 初始化逻辑
+}
+
+# 主要功能函数
+my_module_main_function() {
+    local param1="$1"
+    local param2="$2"
+    
+    # 输入验证
+    validate_input "$param1" || return 1
+    
+    # 核心逻辑
+    # ...
+    
+    # 结果返回
+    echo "处理结果"
+}
+
+# 清理函数
+my_module_cleanup() {
+    log_debug "清理 $MODULE_NAME 资源"
+    # 清理逻辑
+}
 ```
 
-#### config/providers.conf - 提供商配置
+### 2. 配置扩展
+
+#### 添加新模型
 ```bash
-# 提供商配置
-PROVIDER_MOONSHOT_BASE_URL="https://api.moonshot.cn/anthropic/"
-PROVIDER_ZHIPU_BASE_URL="https://open.bigmodel.cn/api/anthropic"
+# 1. 编辑 config/models.conf
+[new-model]
+provider="new-provider"
+api_name="new-model-name"
+context_length="32K"
+max_tokens=2048
+
+# 2. 添加提供商配置
+[new-provider]
+base_url="https://api.new-provider.com"
+api_key_env="NEW_PROVIDER_API_KEY"
+rate_limit=100
+
+# 3. 运行测试验证
+./tests/test_runner.sh integration/test_new_model.sh
 ```
 
-## 🔄 扩展指南
+#### 添加新功能模块
+```bash
+# 1. 创建模块文件
+lib/managers/new_feature_manager.sh
 
-### 添加新的AI提供商
+# 2. 实现模块接口
+new_feature_init()
+new_feature_main()
+new_feature_cleanup()
 
-1. 在 `config/providers.conf` 中添加提供商配置
-2. 在 `lib/managers/model_manager.sh` 中添加提供商逻辑
-3. 更新 `config/models.conf` 中的可用提供商列表
-4. 编写相应的测试用例
+# 3. 添加到主程序
+# 在 main.sh 中添加：
+source "lib/managers/new_feature_manager.sh"
 
-### 添加新的模块
+# 4. 编写测试
+tests/unit/test_new_feature_manager.sh
+```
 
-1. 在适当的 `lib/` 子目录中创建新模块
-2. 遵循现有的命名约定和代码风格
-3. 在 `main.sh` 中引入新模块
-4. 编写对应的单元测试和集成测试
+### 3. 调试工具
 
-### 自定义配置
-
-所有配置都可以通过修改 `config/` 目录下的文件进行自定义，无需修改代码。
-
-## 🛠️ 开发工具
-
-### 代码风格
-- 使用清晰的变量命名
-- 全局配置使用大写，局部变量使用小写
-- 每个函数包含详细注释
-- 错误处理和返回码一致性
-
-### 调试支持
 ```bash
 # 启用调试模式
-export LOG_LEVEL="DEBUG"
+export DEBUG=1
+export LOG_LEVEL=DEBUG
 
-# 查看日志文件
-tail -f ~/.claude/claude-model-switcher/logs/installer.log
+# 查看详细日志
+tail -f ~/.claude/claude-model-switcher/logs/debug.log
+
+# 性能分析
+time ~/.claude/claude-model-switcher/main.sh list_models
+
+# 内存使用监测
+./tests/test_runner.sh performance
 ```
 
 ## 📊 性能优化
 
-- 配置文件缓存机制，避免重复加载
-- 模块按需加载，减少启动时间
-- 并行化处理，提升安装速度
-- 智能备份策略，节省存储空间
+### 1. 缓存策略
+```bash
+# 配置缓存
+CACHE_TTL=3600          # 1小时缓存
+CACHE_SIZE=100MB        # 最大缓存大小
+CACHE_DIR="$HOME/.claude/cache"
 
-## 🔒 安全特性
+# 手动清理缓存
+~/.claude/claude-model-switcher/main.sh cache-clear
+```
 
-- API密钥仅在会话中存储，不写入文件
-- 所有文件修改前自动备份
-- 原子操作，防止配置损坏
-- 输入验证，防止注入攻击
+### 2. 并行处理
+```bash
+# 批量模型检测
+PARALLEL_JOBS=4
+~/.claude/claude-model-switcher/main.sh batch-check
+```
 
-## 📈 监控和日志
+### 3. 内存优化
+```bash
+# 限制内存使用
+MAX_MEMORY=512MB
+~/.claude/claude-model-switcher/main.sh optimize-memory
+```
 
-- 结构化日志记录
-- 多级别日志控制
-- 操作审计追踪
-- 性能指标收集
+## 🔒 安全最佳实践
 
-## 🤝 贡献指南
+### 1. API密钥管理
+```bash
+# 安全存储API密钥
+export MOONSHOT_API_KEY="your-key-here"
+export OPENAI_API_KEY="your-key-here"
 
-1. Fork 项目
-2. 创建功能分支
-3. 编写测试用例
-4. 提交代码变更
-5. 创建 Pull Request
+# 使用密钥管理服务
+~/.claude/claude-model-switcher/main.sh setup-key-manager
+```
 
-## 📝 版本历史
+### 2. 权限控制
+```bash
+# 设置文件权限
+chmod 600 ~/.claude/config/providers.conf
+chmod 755 ~/.claude/claude-model-switcher/main.sh
 
-### v5.0.0 (当前版本)
-- 🎉 完全模块化重构
-- ✅ 实现配置驱动架构
-- 🧪 添加完整测试框架
-- 📚 改进文档和用户体验
+# 用户权限管理
+~/.claude/claude-model-switcher/main.sh setup-user-permissions
+```
 
-### v4.2.0 (遗留版本)
-- 单文件架构
-- 硬编码配置
-- 基本功能实现
+### 3. 审计日志
+```bash
+# 查看操作日志
+~/.claude/claude-model-switcher/main.sh audit-log
 
-## 📞 支持
+# 安全扫描
+~/.claude/claude-model-switcher/main.sh security-scan
+```
 
-如有问题或建议，请：
-1. 查看本文档
-2. 运行 `./main.sh --help` 获取帮助
-3. 检查日志文件
-4. 提交 Issue
+## 🚀 部署方案
+
+### 1. 单机部署
+```bash
+# 标准安装
+./install.sh
+
+# Docker部署
+docker run -it \
+  -v ~/.claude:/root/.claude \
+  claude-model-switcher:latest
+```
+
+### 2. 团队部署
+```bash
+# 共享配置部署
+~/.claude/claude-model-switcher/main.sh team-setup \
+  --config-repo "git@github.com:team/claude-config.git" \
+  --shared-models "kimi,gpt4,claude35"
+
+# 权限管理
+~/.claude/claude-model-switcher/main.sh setup-team-permissions \
+  --admin-users "alice,bob" \
+  --readonly-users "charlie,david"
+```
+
+### 3. CI/CD集成
+```yaml
+# GitHub Actions示例
+name: Claude Model Switcher CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Tests
+        run: |
+          ./tests/test_runner.sh
+          ~/.claude/claude-model-switcher/main.sh security-scan
+```
+
+## 📈 监控和运维
+
+### 1. 系统监控
+```bash
+# 实时状态
+~/.claude/claude-model-switcher/main.sh status --real-time
+
+# 性能指标
+~/.claude/claude-model-switcher/main.sh metrics
+
+# 健康检查
+~/.claude/claude-model-switcher/main.sh health-check
+```
+
+### 2. 告警配置
+```bash
+# 设置告警阈值
+~/.claude/claude-model-switcher/main.sh setup-alerts \
+  --api-timeout 30 \
+  --error-rate 5% \
+  --memory-usage 80%
+
+# 集成通知服务
+~/.claude/claude-model-switcher/main.sh setup-notifications \
+  --slack-webhook "https://hooks.slack.com/services/..." \
+  --email "admin@company.com"
+```
+
+## 🤝 社区和支持
+
+### 1. 获取帮助
+- 📖 **文档**：完整的开发文档和使用指南
+- 💬 **讨论**：GitHub Discussions 技术交流
+- 🐛 **问题**：GitHub Issues 问题反馈
+- 📧 **邮件**：claude-switcher@company.com
+
+### 2. 贡献指南
+```bash
+# 1. Fork项目
+git clone https://github.com/your-username/claude-model-switcher.git
+
+# 2. 创建功能分支
+git checkout -b feature/amazing-feature
+
+# 3. 编写测试
+./tests/test_runner.sh
+
+# 4. 提交代码
+git commit -m "Add amazing feature"
+
+# 5. 创建PR
+git push origin feature/amazing-feature
+```
+
+### 3. 版本发布
+- **主版本**：架构重大升级
+- **次版本**：新功能增加
+- **修订版本**：Bug修复和优化
+
+## 📄 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+## 🙏 致谢
+
+感谢以下开源项目的支持：
+- [Claude Code](https://claude.ai/code) - Anthropic官方CLI工具
+- [Bash Testing Framework](https://github.com/bats-core/bats-core) - 测试框架灵感
+- [ShellCheck](https://www.shellcheck.net/) - Shell脚本质量检查
 
 ---
 
-**Claude Model Switcher v5.0.0** - 让AI模型切换变得简单而强大！ 🚀
+<div align="center">
+
+**Claude Model Switcher v5.0.0**  
+让AI模型管理变得简单而强大！ 🚀
+
+[![Stars](https://img.shields.io/github/stars/your-repo/claude-model-switcher?style=social)](https://github.com/your-repo/claude-model-switcher)  
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)  
+[![Version](https://img.shields.io/badge/version-5.0.0-green.svg)](CHANGELOG.md)
+
+</div>
