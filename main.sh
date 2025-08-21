@@ -164,6 +164,11 @@ if [ -f "$CLAUDE_SWITCHER_DIR/main.sh" ]; then
     
     # Initialize logger for shell functions
     logger_init >/dev/null 2>&1
+    
+    # Load persisted environment variables if available
+    if declare -f load_persisted_env_vars >/dev/null 2>&1; then
+        load_persisted_env_vars >/dev/null 2>&1 || true
+    fi
 fi
 
 # Shell functions for user interaction
@@ -285,6 +290,11 @@ cmd_uninstall() {
     if [ -d "$SWITCHER_DIR" ]; then
         log_progress "Removing switcher directory: $SWITCHER_DIR"
         rm -rf "$SWITCHER_DIR"
+        
+        # After removing the directory, disable file logging to avoid errors
+        # since the log directory no longer exists
+        export LOGGER_FILE=""
+        
         log_success "Switcher directory removed"
     fi
     

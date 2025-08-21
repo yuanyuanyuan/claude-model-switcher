@@ -104,6 +104,14 @@ use_model_impl() {
         return 1
     fi
     
+    # Set model environment variables
+    export ANTHROPIC_MODEL="$main_model"
+    export ANTHROPIC_SMALL_FAST_MODEL="$fast_model"
+    log_success "Model environment variables configured: $main_model | $fast_model"
+    
+    # Save environment variables for persistence
+    _save_current_env_vars "$provider" "$main_model" "$fast_model"
+    
     # Configure Claude Code settings
     if ! _configure_claude_settings "$alias" "$main_model" "$fast_model" "$context_info"; then
         log_error "Failed to configure Claude Code settings"
@@ -474,5 +482,49 @@ remove_model() {
     
     log_success "Model '$alias' removed from configuration"
     return 0
+}
+
+# Save current environment variables for persistence
+_save_current_env_vars() {
+    local provider="$1"
+    local main_model="$2"
+    local fast_model="$3"
+    
+    local env_file="$CONFIG_DIR/current_env.conf"
+    
+    # Create environment configuration content
+    local env_content
+    env_content=$(cat << EOF
+# Current Model Environment Variables
+# This file is automatically managed by the model switcher
+# Last updated: $(date)
+
+export ANTHROPIC_BASE_URL="$ANTHROPIC_BASE_URL"
+export ANTHROPIC_AUTH_TOKEN="$ANTHROPIC_AUTH_TOKEN"
+export ANTHROPIC_MODEL="$main_model"
+export ANTHROPIC_SMALL_FAST_MODEL="$fast_model"
+EOF
+    )
+    
+    # Write environment file
+    if echo "$env_content" > "$env_file"; then
+        log_success "Environment variables saved for persistence"
+        return 0
+    else
+        log_warn "Failed to save environment variables"
+        return 1
+    fi
+}
+
+# Load persisted environment variables
+load_persisted_env_vars() {
+    local env_file="$CONFIG_DIR/current_env.conf"
+    
+    if [ -f "$env_file" ]; then
+        source "$env_file"
+        return 0
+    fi
+    
+    return 1
 }
 

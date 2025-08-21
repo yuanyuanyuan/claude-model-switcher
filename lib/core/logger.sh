@@ -76,7 +76,17 @@ _log() {
     
     # Log to file
     if [ "$to_file" = "true" ] && [ -n "$LOGGER_FILE" ]; then
-        echo "$formatted_message" >> "$LOGGER_FILE"
+        # Ensure log directory exists before writing
+        local log_dir
+        log_dir=$(dirname "$LOGGER_FILE")
+        if [ ! -d "$log_dir" ]; then
+            mkdir -p "$log_dir" 2>/dev/null || true
+        fi
+        
+        # Only write to file if we can create/access the directory
+        if [ -d "$log_dir" ] && [ -w "$log_dir" ]; then
+            echo "$formatted_message" >> "$LOGGER_FILE" 2>/dev/null || true
+        fi
     fi
     
     # Log to console
