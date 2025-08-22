@@ -267,7 +267,7 @@ _update_configuration_paths() {
     local config_file="$install_target/config/app.conf"
     
     if [ ! -f "$config_file" ]; then
-        log_warn "Configuration file not found: $config_file"
+        log_warning "Configuration file not found: $config_file"
         return 0
     fi
     
@@ -309,7 +309,7 @@ _verify_configuration() {
     local config_file="$install_target/config/app.conf"
     
     if [ ! -f "$config_file" ]; then
-        log_warn "Configuration file not found for verification: $config_file"
+        log_warning "Configuration file not found for verification: $config_file"
         return 0
     fi
     
@@ -332,8 +332,12 @@ _verify_configuration() {
     
     for dir in "${dirs_to_check[@]}"; do
         if [ ! -d "$dir" ]; then
-            log_error "Configuration verification failed: Directory not found: $dir"
-            return 1
+            log_warning "Directory not found, creating: $dir"
+            mkdir -p "$dir" || {
+                log_error "Failed to create directory: $dir"
+                return 1
+            }
+            log_success "Created directory: $dir"
         fi
     done
     
@@ -412,7 +416,6 @@ bootstrap_install() {
     
     # Make scripts executable
     chmod +x "$INSTALL_TARGET/main.sh"
-    chmod +x "$INSTALL_TARGET/tests/test_runner.sh"
     
     log_success "Modular system files copied successfully"
     

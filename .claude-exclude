@@ -18,10 +18,7 @@
 *.backup
 backups/
 
-# 排除测试相关文件（但保留测试目录结构）
-tests/results/
-*.test.js
-*.spec.js
+
 
 # 排除文档目录（但保留README.md）
 docs/
@@ -56,12 +53,16 @@ package-lock.json
 *.rar
 
 # 排除内存和缓存文件
-memory-bank/cache/
-*.memcache
+memory-bank/
 
-# 排除特定配置文件的备份版本
-config/*.backup
-config/*.old
+
+tests/
+
+.claude/
+
+.codebuddy/
+.cursor/
+.vibedev/
 
 # 注意：规则按顺序处理，后面的规则可以覆盖前面的规则
 # 目录排除使用后缀 /，如：docs/
