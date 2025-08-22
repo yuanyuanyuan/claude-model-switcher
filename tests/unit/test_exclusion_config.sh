@@ -46,15 +46,86 @@ assert_failure() {
     fi
 }
 
-# Load the functions from install.sh
-source_functions() {
-    # Extract only the exclusion-related functions
-    sed -n '/^# Parse exclusion rules from file/,/^}$/p' ../../install.sh
-    sed -n '/^# Check if a file should be excluded/,/^}$/p' ../../install.sh
+# Extract only the exclusion-related functions to avoid triggering installation
+extract_exclusion_functions() {
+    cat << 'EOF'
+# Parse exclusion rules from file
+parse_exclusion_file() {
+    local exclude_file="${1:-.claude-exclude}"
+    local -n exclusion_rules_ref="$2"
+    
+    if [ ! -f "$exclude_file" ]; then
+        return 0
+    fi
+    
+    while IFS= read -r line || [ -n "$line" ]; do
+        line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        if [ -n "$line" ] && [[ ! "$line" =~ ^# ]]; then
+            exclusion_rules_ref+=("$line")
+        fi
+    done < "$exclude_file"
+    
+    return 0
 }
 
-# Source the functions
-eval "$(source_functions)"
+# Check if a file should be excluded based on rules
+is_file_excluded() {
+    local file_path="$1"
+    shift
+    local exclusion_rules=("$@")
+    
+    if [ ${#exclusion_rules[@]} -eq 0 ]; then
+        return 1
+    fi
+    
+    local exclude_file=false
+    local include_override=false
+    
+    for rule in "${exclusion_rules[@]}"; do
+        if [[ "$rule" == !* ]]; then
+            local include_pattern="${rule:1}"
+            include_pattern=$(echo "$include_pattern" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            
+            if [ -z "$include_pattern" ]; then
+                continue
+            fi
+            
+            if [[ "$file_path" == $include_pattern ]] || 
+               [[ "$include_pattern" == */ && "$file_path" == "${include_pattern%/}"* ]] ||
+               [[ "$file_path" == *"/$include_pattern" ]]; then
+                include_override=true
+            fi
+            continue
+        fi
+        
+        if [[ "$rule" == */ ]]; then
+            local dir_pattern="${rule%/}"
+            if [[ "$file_path" == "$dir_pattern"* ]] || 
+               [[ "$file_path" == *"/$dir_pattern"* ]] ||
+               [[ "$file_path" == *"/$dir_pattern" ]]; then
+                exclude_file=true
+            fi
+            continue
+        fi
+        
+        if [[ "$file_path" == $rule ]] || 
+           [[ "$file_path" == *"/$rule" ]] ||
+           [[ "$rule" == *"*" && "$file_path" == $rule ]]; then
+            exclude_file=true
+        fi
+    done
+    
+    if [ "$include_override" = true ]; then
+        return 1
+    fi
+    
+    [ "$exclude_file" = true ]
+}
+EOF
+}
+
+# Source the extracted functions
+eval "$(extract_exclusion_functions)"
 
 test_exclusion_config() {
     echo "📋 Unit Tests - File Exclusion Configuration"
