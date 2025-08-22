@@ -137,7 +137,7 @@ setup_shell_integration() {
 # This block is managed automatically by the installation script.
 
 # Define paths for the switcher's files.
-export CLAUDE_SWITCHER_DIR="$HOME/.claude/claude-model-switcher"
+export CLAUDE_SWITCHER_DIR="$HOME/claude-model-switcher"
 export CLAUDE_MODELS_CONF="$CLAUDE_SWITCHER_DIR/config/models.conf"
 
 # Load the modular system

@@ -74,6 +74,9 @@ claude-model-switcher/
 git clone https://github.com/your-repo/claude-model-switcher.git
 cd claude-model-switcher
 
+# 可选：自定义安装目录（默认为 /root/claude-model-switcher）
+export CLAUDE_INSTALL_DIR="/your/custom/path"
+
 # 执行安装
 chmod +x install.sh
 ./install.sh
@@ -102,17 +105,17 @@ use_model gpt4
 
 ```bash
 # 查看系统状态
-~/.claude/claude-model-switcher/main.sh status
+$CLAUDE_INSTALL_DIR/main.sh status
 
 # 添加自定义模型
-~/.claude/claude-model-switcher/main.sh add-model \
+$CLAUDE_INSTALL_DIR/main.sh add-model \
   "custom-model" \
   "openai" \
   "gpt-4-turbo-preview" \
   "https://api.openai.com/v1"
 
 # 批量管理模型
-~/.claude/claude-model-switcher/main.sh batch-update
+$CLAUDE_INSTALL_DIR/main.sh batch-update
 ```
 
 ## ⚙️ 配置详解
@@ -123,7 +126,7 @@ use_model gpt4
 # 基础设置
 APP_NAME="Claude Model Switcher"
 APP_VERSION="5.0.0"
-INSTALL_DIR="$HOME/.claude/claude-model-switcher"
+INSTALL_DIR="${CLAUDE_INSTALL_DIR:-/root/claude-model-switcher}"
 
 # 日志配置
 LOG_LEVEL="INFO"
@@ -320,10 +323,10 @@ export DEBUG=1
 export LOG_LEVEL=DEBUG
 
 # 查看详细日志
-tail -f ~/.claude/claude-model-switcher/logs/debug.log
+tail -f $CLAUDE_INSTALL_DIR/logs/debug.log
 
 # 性能分析
-time ~/.claude/claude-model-switcher/main.sh list_models
+time $CLAUDE_INSTALL_DIR/main.sh list_models
 
 # 内存使用监测
 ./tests/test_runner.sh performance
@@ -339,21 +342,21 @@ CACHE_SIZE=100MB        # 最大缓存大小
 CACHE_DIR="$HOME/.claude/cache"
 
 # 手动清理缓存
-~/.claude/claude-model-switcher/main.sh cache-clear
+$CLAUDE_INSTALL_DIR/main.sh cache-clear
 ```
 
 ### 2. 并行处理
 ```bash
 # 批量模型检测
 PARALLEL_JOBS=4
-~/.claude/claude-model-switcher/main.sh batch-check
+$CLAUDE_INSTALL_DIR/main.sh batch-check
 ```
 
 ### 3. 内存优化
 ```bash
 # 限制内存使用
 MAX_MEMORY=512MB
-~/.claude/claude-model-switcher/main.sh optimize-memory
+$CLAUDE_INSTALL_DIR/main.sh optimize-memory
 ```
 
 ## 🔒 安全最佳实践
@@ -365,26 +368,26 @@ export MOONSHOT_API_KEY="your-key-here"
 export OPENAI_API_KEY="your-key-here"
 
 # 使用密钥管理服务
-~/.claude/claude-model-switcher/main.sh setup-key-manager
+$CLAUDE_INSTALL_DIR/main.sh setup-key-manager
 ```
 
 ### 2. 权限控制
 ```bash
 # 设置文件权限
 chmod 600 ~/.claude/config/providers.conf
-chmod 755 ~/.claude/claude-model-switcher/main.sh
+chmod 755 $CLAUDE_INSTALL_DIR/main.sh
 
 # 用户权限管理
-~/.claude/claude-model-switcher/main.sh setup-user-permissions
+$CLAUDE_INSTALL_DIR/main.sh setup-user-permissions
 ```
 
 ### 3. 审计日志
 ```bash
 # 查看操作日志
-~/.claude/claude-model-switcher/main.sh audit-log
+$CLAUDE_INSTALL_DIR/main.sh audit-log
 
 # 安全扫描
-~/.claude/claude-model-switcher/main.sh security-scan
+$CLAUDE_INSTALL_DIR/main.sh security-scan
 ```
 
 ## 🚀 部署方案
@@ -403,12 +406,12 @@ docker run -it \
 ### 2. 团队部署
 ```bash
 # 共享配置部署
-~/.claude/claude-model-switcher/main.sh team-setup \
+$CLAUDE_INSTALL_DIR/main.sh team-setup \
   --config-repo "git@github.com:team/claude-config.git" \
   --shared-models "kimi,gpt4,claude35"
 
 # 权限管理
-~/.claude/claude-model-switcher/main.sh setup-team-permissions \
+$CLAUDE_INSTALL_DIR/main.sh setup-team-permissions \
   --admin-users "alice,bob" \
   --readonly-users "charlie,david"
 ```
@@ -426,7 +429,7 @@ jobs:
       - name: Run Tests
         run: |
           ./tests/test_runner.sh
-          ~/.claude/claude-model-switcher/main.sh security-scan
+          $CLAUDE_INSTALL_DIR/main.sh security-scan
 ```
 
 ## 📈 监控和运维
@@ -434,25 +437,25 @@ jobs:
 ### 1. 系统监控
 ```bash
 # 实时状态
-~/.claude/claude-model-switcher/main.sh status --real-time
+$CLAUDE_INSTALL_DIR/main.sh status --real-time
 
 # 性能指标
-~/.claude/claude-model-switcher/main.sh metrics
+$CLAUDE_INSTALL_DIR/main.sh metrics
 
 # 健康检查
-~/.claude/claude-model-switcher/main.sh health-check
+$CLAUDE_INSTALL_DIR/main.sh health-check
 ```
 
 ### 2. 告警配置
 ```bash
 # 设置告警阈值
-~/.claude/claude-model-switcher/main.sh setup-alerts \
+$CLAUDE_INSTALL_DIR/main.sh setup-alerts \
   --api-timeout 30 \
   --error-rate 5% \
   --memory-usage 80%
 
 # 集成通知服务
-~/.claude/claude-model-switcher/main.sh setup-notifications \
+$CLAUDE_INSTALL_DIR/main.sh setup-notifications \
   --slack-webhook "https://hooks.slack.com/services/..." \
   --email "admin@company.com"
 ```

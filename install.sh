@@ -9,7 +9,8 @@ set -e
 # Script metadata
 SCRIPT_VERSION="5.0.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_TARGET="$HOME/.claude/claude-model-switcher"
+DEFAULT_INSTALL_TARGET="/root/claude-model-switcher"
+INSTALL_TARGET="${CLAUDE_INSTALL_DIR:-$DEFAULT_INSTALL_TARGET}"
 
 # Simple logging for bootstrap
 log_info() {
@@ -24,8 +25,149 @@ log_error() {
     echo "❌ $1"
 }
 
+log_warning() {
+    echo "⚠️  $1"
+}
+
 log_progress() {
     echo "🚀 $1"
+}
+
+# Check directory permissions
+check_directory_permissions() {
+    local target_dir="$1"
+    local parent_dir
+    parent_dir=$(dirname "$target_dir")
+    
+    # Check if parent directory is writable
+    if [ ! -w "$parent_dir" ]; then
+        log_error "No write permission for parent directory: $parent_dir"
+        log_error "Please check your permissions or choose a different installation directory"
+        return 1
+    fi
+    
+    # Check if target directory exists and is writable (if it exists)
+    if [ -d "$target_dir" ] && [ ! -w "$target_dir" ]; then
+        log_error "No write permission for existing directory: $target_dir"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Handle existing directory
+handle_existing_directory() {
+    local target_dir="$1"
+    if [ -d "$target_dir" ] && [ "$(ls -A "$target_dir" 2>/dev/null)" ]; then
+        log_warning "Directory already exists and is not empty: $target_dir"
+        echo -n "Do you want to continue? This may overwrite existing files. [y/N]: "
+        read -r continue_choice
+        
+        case "$continue_choice" in
+            [yY]|[yY][eE][sS])
+                log_info "Continuing with installation..."
+                ;;
+            *)
+                log_info "Installation cancelled by user"
+                exit 0
+                ;;
+        esac
+    fi
+}
+
+# Cleanup on failure
+cleanup_on_failure() {
+    local target_dir="$1"
+    if [ -d "$target_dir" ] && [ "${CLEANUP_ON_FAILURE:-true}" = "true" ]; then
+        log_info "Cleaning up installation directory due to failure..."
+        rm -rf "$target_dir"
+    fi
+}
+
+# Update configuration paths with actual installation directory
+_update_configuration_paths() {
+    local install_target="$1"
+    local config_file="$install_target/config/app.conf"
+    
+    if [ ! -f "$config_file" ]; then
+        log_warn "Configuration file not found: $config_file"
+        return 0
+    fi
+    
+    log_info "Updating configuration file: $config_file"
+    
+    # Create backup
+    cp "$config_file" "$config_file.backup"
+    
+    # Update SWITCHER_DIR in configuration
+    if sed -i "s|^SWITCHER_DIR=.*|SWITCHER_DIR=\"$install_target\"|" "$config_file"; then
+        log_success "Updated SWITCHER_DIR in configuration: $install_target"
+        
+        # Update dependent directory paths
+        local config_dir="$install_target/config"
+        local lib_dir="$install_target/lib"
+        local memory_dir="$install_target/memory"
+        local log_dir="$install_target/logs"
+        local backup_dir="$install极速_target/backups"
+        
+        sed -i "s|^CONFIG_DIR=.*|CONFIG_DIR=\"$config_dir\"|" "$config_file"
+        sed -i "s|^LIB_DIR=.*|LIB_DIR=\"$lib_dir\"|" "$config_file"
+        sed -i "s|^MEMORY_DIR=.*|MEMORY_DIR=\"$memory_dir\"|" "$config_file"
+        sed -i "s|^LOG_DIR=.*|LOG_DIR=\"$log_dir\"|" "$config_file"
+        sed -i "s|^BACKUP_DIR=.*|BACKUP_DIR=\"$backup_dir\"|" "$config_file"
+        
+        log_success "All directory paths updated in configuration"
+        return 0
+    else
+        log_error "Failed to update configuration file: $config_file"
+        # Restore backup
+        mv "$config_file.backup" "$config_file"
+        return 1
+    fi
+}
+
+# Verify configuration integrity
+_verify_configuration() {
+    local install_target="$1"
+    local config_file="$install_target/config/app.conf"
+    
+    if [ ! -f "$config_file" ]; then
+        log_warn "Configuration file not found for verification: $config_file"
+        return 0
+    fi
+    
+    log_info "Verifying configuration integrity..."
+    
+    # Check if SWITCHER_DIR is correctly set
+    if ! grep -q "^SWITCHER_DIR=\"$install_target\"$" "$config_file"; then
+        log_error "Configuration verification failed: SWITCHER_DIR not correctly set"
+        return 1
+    fi
+    
+    # Check if all directory paths exist and are accessible
+    local dirs_to_check=(
+        "$install_target/config"
+        "$install_target/lib" 
+        "$install_target/memory"
+        "$install_target/logs"
+        "$install_target/backups"
+    )
+    
+    for dir in "${dirs_to_check[@]}"; do
+        if [ ! -d "$dir" ]; then
+            log_error "Configuration verification failed: Directory not found: $dir"
+            return 1
+        fi
+    done
+    
+    # Verify main executable exists
+    if [ ! -f "$install_target/main.sh" ] || [ ! -x "$install_target/main.sh" ]; then
+        log_error "Configuration verification failed: main.sh not found or not executable"
+        return 1
+    fi
+    
+    log_success "Configuration verification passed"
+    return 0
 }
 
 # Bootstrap installation
@@ -39,7 +181,16 @@ bootstrap_install() {
         exit 1
     fi
     
-    # Check if already installed
+    # Check directory permissions
+    log_progress "Checking installation directory permissions..."
+    if ! check_directory_permissions "$INSTALL_TARGET"; then
+        exit 1
+    fi
+    
+    # Handle existing directory
+    handle_existing_directory "$INSTALL_TARGET"
+    
+    # Check if already installed (for update scenario)
     if [ -d "$INSTALL_TARGET" ] && [ -f "$INSTALL_TARGET/main.sh" ]; then
         log_info "Existing installation detected at: $INSTALL_TARGET"
         echo -n "Do you want to update the existing installation? [y/N]: "
@@ -63,6 +214,14 @@ bootstrap_install() {
     # Copy all files to installation directory
     log_progress "Copying modular system files..."
     cp -r "$SCRIPT_DIR"/* "$INSTALL_TARGET/"
+
+    # Update configuration files with actual installation directory
+    log_progress "Updating configuration files with installation path..."
+    _update_configuration_paths "$INSTALL_TARGET"
+    
+    # Verify configuration correctness
+    log_progress "Verifying configuration integrity..."
+    _verify_configuration "$INSTALL_TARGET"
     
     # Make scripts executable
     chmod +x "$INSTALL_TARGET/main.sh"
@@ -86,6 +245,7 @@ bootstrap_install() {
         log_info "3. Use a model: use_model kimi"
     else
         log_error "Installation failed!"
+        cleanup_on_failure "$INSTALL_TARGET"
         exit 1
     fi
 }
@@ -147,6 +307,10 @@ OPTIONS:
 DESCRIPTION:
     This script installs the modular Claude Model Switcher system.
     The system will be installed to: $INSTALL_TARGET
+    
+    You can customize the installation directory using the CLAUDE_INSTALL_DIR
+    environment variable. For example:
+        CLAUDE_INSTALL_DIR="/custom/path" ./install.sh
 
 FEATURES:
     • Modular architecture with clean separation of concerns
