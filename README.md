@@ -31,7 +31,7 @@
 ### 技术栈
 ```
 ├── Shell脚本 (Bash/Zsh兼容)
-├── 配置文件 (INI格式，易于编辑)
+├── 配置文件 (Bash变量格式，易于编辑)
 ├── 测试框架 (自定义BDD测试)
 ├── 日志系统 (结构化日志)
 └── 模块系统 (动态加载)
@@ -241,51 +241,67 @@ TIMEOUT_SECONDS=30
 ### 2. 模型配置 (config/models.conf)
 
 ```bash
-# Kimi模型
-[kimi]
-provider="moonshot"
-api_name="kimi-k2-turbo-preview"
-context_length="128K"
-max_tokens=4096
-temperature=0.6
+# Claude Model Switcher Model Configuration
+# This file defines all available AI models and their properties
 
-# GPT-4
-[gpt4]
-provider="openai"
-api_name="gpt-4-turbo-preview"
-context_length="128K"
-max_tokens=4096
-temperature=0.7
+# Model: Kimi K2 Turbo Preview
+MODEL_PROVIDERS["kimi"]="moonshot"
+MODEL_API_NAMES["kimi"]="kimi-k2-0711-preview"
+MODEL_SMALL_FAST_NAMES["kimi"]="kimi-k2-0711-preview"
+MODEL_CONTEXTS["kimi"]="128K tokens (Main & Fast)"
+MODEL_DESCRIPTIONS["kimi"]="Moonshot Kimi K2 - Advanced reasoning and long context"
+MODEL_CAPABILITIES["kimi"]="text,reasoning,code"
 
-# Claude 3.5 Sonnet
-[claude35]
-provider="anthropic"
-api_name="claude-3-5-sonnet-20241022"
-context_length="200K"
-max_tokens=4096
-temperature=0.7
+# Model: GLM-4.5 Series
+MODEL_PROVIDERS["glm4"]="zhipu"
+MODEL_API_NAMES["glm4"]="glm-4.5"
+MODEL_SMALL_FAST_NAMES["glm4"]="glm-4.5-flash"
+MODEL_CONTEXTS["glm4"]="32K tokens (Main) / 128K tokens (Fast)"
+MODEL_DESCRIPTIONS["glm4"]="Zhipu GLM-4.5 - Balanced performance with fast variant"
+MODEL_CAPABILITIES["glm4"]="text,reasoning,code,multimodal"
+
+# Model: DeepSeek-V3.1 (Chat Mode)
+MODEL_PROVIDERS["deepseek"]="deepseek"
+MODEL_API_NAMES["deepseek"]="deepseek-chat"
+MODEL_SMALL_FAST_NAMES["deepseek"]="deepseek-chat"
+MODEL_CONTEXTS["deepseek"]="128K tokens (Main & Fast)"
+MODEL_DESCRIPTIONS["deepseek"]="DeepSeek-V3.1 - Advanced reasoning with 128K context and function calling"
+MODEL_CAPABILITIES["deepseek"]="text,reasoning,code,function-calling"
+
+# Model Registry
+AVAILABLE_MODELS="kimi glm4 deepseek"
+DEFAULT_MODEL="kimi"
+FALLBACK_MODEL="glm4"
 ```
 
 ### 3. 提供商配置 (config/providers.conf)
 
 ```bash
-# Moonshot (Kimi)
-[moonshot]
-base_url="https://api.moonshot.cn/anthropic/"
-api_key_env="MOONSHOT_API_KEY"
-rate_limit=60
+# Claude Model Switcher Provider Configuration
+# This file defines all supported AI model providers
 
-# OpenAI
-[openai]
-base_url="https://api.openai.com/v1"
-api_key_env="OPENAI_API_KEY"
-rate_limit=100
+# Moonshot Provider Configuration
+PROVIDER_MOONSHOT_BASE_URL="https://api.moonshot.cn/anthropic/"
+PROVIDER_MOONSHOT_AUTH_TYPE="bearer"
+PROVIDER_MOONSHOT_DESCRIPTION="Moonshot AI - Kimi series models"
+PROVIDER_MOONSHOT_SUPPORTED_MODELS="kimi-k2-turbo-preview"
 
-# Anthropic
-[anthropic]
-base_url="https://api.anthropic.com"
-api_key_env="ANTHROPIC_API_KEY"
-rate_limit=50
+# Zhipu GLM Provider Configuration
+PROVIDER_ZHIPU_BASE_URL="https://open.bigmodel.cn/api/anthropic"
+PROVIDER_ZHIPU_AUTH_TYPE="bearer"
+PROVIDER_ZHIPU_DESCRIPTION="Zhipu AI - GLM series models"
+PROVIDER_ZHIPU_SUPPORTED_MODELS="glm-4.5,glm-4.5-flash"
+
+# DeepSeek Provider Configuration
+PROVIDER_DEEPSEEK_BASE_URL="https://api.deepseek.com/anthropic"
+PROVIDER_DEEPSEEK_AUTH_TYPE="bearer"
+PROVIDER_DEEPSEEK_DESCRIPTION="DeepSeek - DeepSeek-V3.1 series models with Anthropic API compatibility"
+PROVIDER_DEEPSEEK_SUPPORTED_MODELS="deepseek-chat"
+
+# Provider Registry
+AVAILABLE_PROVIDERS="moonshot zhipu deepseek"
+DEFAULT_PROVIDER="moonshot"
+FALLBACK_PROVIDER="zhipu"
 ```
 
 ## 🧪 测试驱动开发
@@ -380,19 +396,24 @@ my_module_cleanup() {
 #### 添加新模型
 ```bash
 # 1. 编辑 config/models.conf
-[new-model]
-provider="new-provider"
-api_name="new-model-name"
-context_length="32K"
-max_tokens=2048
+MODEL_PROVIDERS["new-model"]="new-provider"
+MODEL_API_NAMES["new-model"]="new-model-name"
+MODEL_SMALL_FAST_NAMES["new-model"]="new-model-fast"
+MODEL_CONTEXTS["new-model"]="32K tokens (Main) / 64K tokens (Fast)"
+MODEL_DESCRIPTIONS["new-model"]="New Model - Description"
+MODEL_CAPABILITIES["new-model"]="text,reasoning"
 
 # 2. 添加提供商配置
-[new-provider]
-base_url="https://api.new-provider.com"
-api_key_env="NEW_PROVIDER_API_KEY"
-rate_limit=100
+PROVIDER_NEW_PROVIDER_BASE_URL="https://api.new-provider.com"
+PROVIDER_NEW_PROVIDER_AUTH_TYPE="bearer"
+PROVIDER_NEW_PROVIDER_DESCRIPTION="New Provider - Description"
+PROVIDER_NEW_PROVIDER_SUPPORTED_MODELS="new-model-name,new-model-fast"
 
-# 3. 运行测试验证
+# 3. 更新注册表
+# 在 AVAILABLE_MODELS 中添加 "new-model"
+# 在 AVAILABLE_PROVIDERS 中添加 "new-provider"
+
+# 4. 运行测试验证
 ./tests/test_runner.sh integration/test_new_model.sh
 ```
 
@@ -614,35 +635,6 @@ git commit -m "Add amazing feature"
 git push origin feature/amazing-feature
 ```
 
-### 3. 版本发布
-- **主版本**：架构重大升级
-- **次版本**：新功能增加
-- **修订版本**：Bug修复和优化
-
-## 📋 变更日志
-
-### v5.1.0 - 2025-08-22
-#### 新增功能
-- **文件排除配置**：添加 `.claude-exclude` 配置文件支持，允许在安装过程中排除特定文件或目录
-- **智能卸载**：优化卸载行为，不再提示卸载 Claude Code CLI，保护用户现有工具
-- **增强安全性**：确保卸载过程只移除自身文件，不干扰其他AI工具
-
-#### 技术改进
-- 实现复杂的文件路径匹配算法，支持通配符、目录排除和例外规则
-- 添加配置文件解析和验证机制
-- 改进错误处理和日志记录
-- 保持向后兼容性，不影响现有安装流程
-
-#### 配置示例
-```bash
-# .claude-exclude 示例
-*.log
-*.tmp
-temp/
-cache/
-docs/deepseek-*
-!logs/important.log
-```
 
 ## 📄 许可证
 
