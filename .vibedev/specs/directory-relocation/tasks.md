@@ -24,7 +24,7 @@
 
 - [x] **2.1 修改配置模板生成逻辑**
   - 文件: `install.sh` (已实现)
-  - 添加 `_update_configuration_path极速s` 函数动态更新配置文件
+  - 添加 `_update_configuration_paths` 函数动态更新配置文件
   - 基于实际安装目录更新所有路径引用
   - 参考需求: 1.2.1 (SWITCH极速ER_DIR 变量初始化)
 
