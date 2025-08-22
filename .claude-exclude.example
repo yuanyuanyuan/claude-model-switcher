@@ -1,0 +1,71 @@
+# Claude Model Switcher - 文件排除配置示例
+# 这个文件定义了在安装过程中应该排除的文件和目录
+# 将文件重命名为 .claude-exclude 以启用排除功能
+
+# 排除所有日志文件
+*.log
+*.log.*
+*.tmp
+
+# 排除临时文件和缓存
+.tmp/
+.cache/
+*.tmp
+*.temp
+
+# 排除备份文件
+*.bak
+*.backup
+backups/
+
+# 排除测试相关文件（但保留测试目录结构）
+tests/results/  # 排除测试结果目录
+*.test.js
+*.spec.js
+
+# 排除文档目录（但保留README.md）
+docs/
+!README.md      # 使用 ! 来覆盖前面的排除规则
+
+# 排除特定的大文件或二进制文件
+large_dataset.bin
+models/pretrained/
+
+# 排除开发环境配置文件（生产环境不需要）
+.env
+.env.local
+.env.development
+
+# 排除IDE配置文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 排除Git相关文件（但保留.gitignore）
+.git/
+!.gitignore
+
+# 排除Node.js依赖（在安装后重新安装）
+node_modules/
+package-lock.json
+
+# 排除特定的大文件类型
+*.zip
+*.tar.gz
+*.rar
+
+# 排除内存和缓存文件
+memory-bank/cache/
+*.memcache
+
+# 排除特定配置文件的备份版本
+config/*.backup
+config/*.old
+
+# 注意：规则按顺序处理，后面的规则可以覆盖前面的规则
+# 目录排除使用后缀 /，如：docs/
+# 否定规则使用前缀 !，如：!README.md
+# 通配符 * 可以匹配任意字符序列
+
+# 环境变量 IGNORE_EXCLUDE=1 可以禁用所有排除规则

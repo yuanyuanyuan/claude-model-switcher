@@ -298,18 +298,8 @@ cmd_uninstall() {
         log_success "Switcher directory removed"
     fi
     
-    # Optionally remove Claude Code (ask user)
-    echo -n "Do you want to remove Claude Code CLI as well? [y/N]: "
-    read -r remove_claude
-    
-    case "$remove_claude" in
-        [yY]|[yY][eE][sS])
-            uninstall_claude_code "" "true"
-            ;;
-        *)
-            log_info "Claude Code CLI preserved"
-            ;;
-    esac
+    # Note: Claude Code CLI is preserved by default (no longer ask user)
+    log_info "Claude Code CLI preserved (not removed)"
     
     log_success "🎉 Uninstallation completed successfully"
     log_info "Please restart your terminal for changes to take effect"

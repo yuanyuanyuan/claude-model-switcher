@@ -33,6 +33,183 @@ log_progress() {
     echo "🚀 $1"
 }
 
+log_debug() {
+    if [ "${DEBUG:-0}" -eq 1 ]; then
+        echo "🐛 $1"
+    fi
+}
+
+# Parse exclusion rules from file
+parse_exclusion_file() {
+    local exclude_file="${1:-.claude-exclude}"
+    local -n exclusion_rules_ref="$2"
+    
+    if [ ! -f "$exclude_file" ]; then
+        log_debug "Exclusion file not found: $exclude_file"
+        return 0
+    fi
+    
+    log_info "Loading exclusion rules from: $exclude_file"
+    local line_count=0
+    local rule_count=0
+    
+    while IFS= read -r line || [ -n "$line" ]; do
+        line_count=$((line_count + 1))
+        
+        # Remove leading/trailing whitespace
+        line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        
+        # Skip empty lines and comments
+        if [ -z "$line" ] || [[ "$line" =~ ^# ]]; then
+            continue
+        fi
+        
+        # Validate rule syntax
+        if [[ "$line" =~ [[:space:]]+# ]] || [[ "$line" =~ ^[[:space:]]+! ]]; then
+            log_warning "Invalid rule syntax at line $line_count: '$line' (trailing comment or malformed negation)"
+            continue
+        fi
+        
+        exclusion_rules_ref+=("$line")
+        rule_count=$((rule_count + 1))
+        log_debug "Added exclusion rule: $line"
+        
+    done < "$exclude_file"
+    
+    log_success "Loaded $rule_count exclusion rules from $exclude_file"
+    return 0
+}
+
+# Check if a file should be excluded based on rules
+is_file_excluded() {
+    local file_path="$1"
+    shift
+    local exclusion_rules=("$@")
+    
+    # If no rules, never exclude
+    if [ ${#exclusion_rules[@]} -eq 0 ]; then
+        return 1
+    fi
+    
+    local exclude_file=false
+    local include_override=false
+    
+    for rule in "${exclusion_rules[@]}"; do
+        # Handle negation rules (include overrides)
+        if [[ "$rule" == !* ]]; then
+            local include_pattern="${rule:1}"
+            # Remove leading/trailing whitespace from pattern
+            include_pattern=$(echo "$include_pattern" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            
+            if [ -z "$include_pattern" ]; then
+                log_warning "Empty negation rule found, skipping"
+                continue
+            fi
+            
+            # Check if this file matches the include pattern
+            if [[ "$file_path" == $include_pattern ]] || 
+               [[ "$include_pattern" == */ && "$file_path" == "${include_pattern%/}"* ]] ||
+               [[ "$file_path" == *"/$include_pattern" ]]; then
+                include_override=true
+                log_debug "Include override matched: $file_path == $include_pattern"
+            fi
+            continue
+        fi
+        
+        # Handle directory exclusion (pattern ends with /)
+        if [[ "$rule" == */ ]]; then
+            local dir_pattern="${rule%/}"
+            if [[ "$file_path" == "$dir_pattern"* ]] || 
+               [[ "$file_path" == *"/$dir_pattern"* ]] ||
+               [[ "$file_path" == *"/$dir_pattern" ]]; then
+                exclude_file=true
+                log_debug "Directory exclusion matched: $file_path in $dir_pattern"
+            fi
+            continue
+        fi
+        
+        # Handle exact file match or wildcard pattern
+        if [[ "$file_path" == $rule ]] || 
+           [[ "$file_path" == *"/$rule" ]] ||
+           [[ "$rule" == *"*" && "$file_path" == $rule ]]; then
+            exclude_file=true
+            log_debug "Pattern matched: $file_path == $rule"
+        fi
+    done
+    
+    # If there's an include override, don't exclude
+    if [ "$include_override" = true ]; then
+        return 1
+    fi
+    
+    # Return exclusion status
+    [ "$exclude_file" = true ]
+}
+
+# Copy files with exclusion rules applied
+copy_with_exclusion() {
+    local source_dir="$1"
+    local target_dir="$2"
+    local exclusion_rules=("${@:3}")
+    
+    log_info "Copying files with exclusion rules applied..."
+    local copied_count=0
+    local excluded_count=0
+    
+    # Create target directory if it doesn't exist
+    mkdir -p "$target_dir"
+    
+    # Use find to safely handle file paths with spaces and special characters
+    while IFS= read -r -d '' file_path; do
+        # Get relative path from source directory
+        local relative_path="${file_path#$source_dir/}"
+        
+        # Check if file should be excluded
+        if is_file_excluded "$relative_path" "${exclusion_rules[@]}"; then
+            log_debug "Excluded: $relative_path"
+            excluded_count=$((excluded_count + 1))
+            continue
+        fi
+        
+        # Create target directory structure
+        local target_file="$target_dir/$relative_path"
+        local target_parent=$(dirname "$target_file")
+        mkdir -p "$target_parent"
+        
+        # Copy the file
+        if cp "$file_path" "$target_file"; then
+            copied_count=$((copied_count + 1))
+            log_debug "Copied: $relative_path"
+        else
+            log_warning "Failed to copy: $relative_path"
+        fi
+        
+    done < <(find "$source_dir" -type f -print0 2>/dev/null)
+    
+    # Copy directories (empty directories that don't contain files but might be needed)
+    while IFS= read -r -d '' dir_path; do
+        local relative_path="${dir_path#$source_dir/}"
+        
+        # Skip source directory itself
+        if [ "$relative_path" = "" ]; then
+            continue
+        fi
+        
+        # Check if directory should be excluded
+        if is_file_excluded "$relative_path/" "${exclusion_rules[@]}"; then
+            log_debug "Excluded directory: $relative_path/"
+            continue
+        fi
+        
+        # Create directory in target (mkdir -p will handle existing directories)
+        mkdir -p "$target_dir/$relative_path"
+        
+    done < <(find "$source_dir" -type d -print0 2>/dev/null)
+    
+    log_success "Copied $copied_count files, excluded $excluded_count files"
+    return 0
+}
+
 # Check directory permissions
 check_directory_permissions() {
     local target_dir="$1"
@@ -108,7 +285,7 @@ _update_configuration_paths() {
         local lib_dir="$install_target/lib"
         local memory_dir="$install_target/memory"
         local log_dir="$install_target/logs"
-        local backup_dir="$install极速_target/backups"
+        local backup_dir="$install_target/backups"
         
         sed -i "s|^CONFIG_DIR=.*|CONFIG_DIR=\"$config_dir\"|" "$config_file"
         sed -i "s|^LIB_DIR=.*|LIB_DIR=\"$lib_dir\"|" "$config_file"
@@ -211,9 +388,19 @@ bootstrap_install() {
     log_progress "Creating installation directory: $INSTALL_TARGET"
     mkdir -p "$INSTALL_TARGET"
     
-    # Copy all files to installation directory
-    log_progress "Copying modular system files..."
-    cp -r "$SCRIPT_DIR"/* "$INSTALL_TARGET/"
+    # Copy all files to installation directory with exclusion rules
+    log_progress "Copying modular system files with exclusion rules..."
+    
+    # Load exclusion rules if available
+    local exclusion_rules=()
+    if [ "${IGNORE_EXCLUDE:-0}" -ne 1 ]; then
+        parse_exclusion_file ".claude-exclude" exclusion_rules
+    else
+        log_info "Exclusion rules disabled by IGNORE_EXCLUDE environment variable"
+    fi
+    
+    # Use smart copy function with exclusion rules
+    copy_with_exclusion "$SCRIPT_DIR" "$INSTALL_TARGET" "${exclusion_rules[@]}"
 
     # Update configuration files with actual installation directory
     log_progress "Updating configuration files with installation path..."
